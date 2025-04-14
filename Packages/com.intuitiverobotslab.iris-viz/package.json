@@ -1,0 +1,12 @@
+{
+    "name": "com.intuitiverobotslab.iris-viz",
+    "version": "1.0.0",
+    "displayName": "IRIS-Viz",
+    "description": "A Unity package for visualizing objects in simulation and real world",
+    "unity": "6000.0",
+    "author": {
+      "name": "Intuitive Robots Lab",
+      "email": "xinkai.jiang@kit.edu",
+      "url": "https://www.irl.iar.kit.edu/team.php"
+    }
+  }
