@@ -1,22 +1,44 @@
-# IRIS-Viz (On processing to replace IRXR)
+# IRIS-Viz
 
-A Unity package for visualizing objects in simulation and real-world contexts, enabling developers to create immersive and accurate representations for a variety of applications.
+**A powerful Unity visualization framework for bridging simulation and reality**
 
-## Description
+## Overview
 
-IRIS-Viz provides powerful visualization tools for Unity that allow seamless integration between simulated environments and real-world data. Developed by the Intuitive Robots Lab, this package simplifies the process of creating, managing, and displaying complex 3D data including meshes and point clouds.
+IRIS-Viz (successor to IRXR) is a comprehensive Unity package developed by the Intuitive Robots Lab that enables seamless visualization of objects in both simulated environments and real-world contexts. By providing a robust framework for handling complex 3D data, IRIS-Viz empowers developers to create immersive and accurate representations for robotics, industrial automation, digital twins, and more.
 
-## Features
+## Key Features
 
-- Real-time visualization of simulation and real-world data
-- Support for large mesh data transmission (up to 10MB)
-- ZeroMQ-based communication for efficient data transfer
-- Modular structure with separate components for scene loading and client operations
+- **High-Performance Visualization** - Render complex meshes and dense point clouds with optimized performance
+- **Dual-Environment Support** - Seamlessly bridge simulation and real-world data in a unified visual framework
+- **Large Data Handling** - Support for transmitting and rendering mesh data up to 10MB
+- **ZeroMQ Communication** - Efficient, reliable data transfer using industry-standard messaging protocols
+- **Modular Architecture** - Separate components for scene loading and client operations, enabling flexible implementation
+- **Cross-Platform Compatibility** - Works across multiple Unity deployment targets
+
+## System Requirements
+
+- Unity 6000.0 or higher
+- NuGetForUnity (for dependency management)
+- NetMQ package (ZeroMQ implementation for .NET)
 
 ## Installation
 
-### Option 1: Using Git URL (Recommended)
+### Step 1: Install Prerequisites
 
+#### NuGetForUnity
+1. In Unity, navigate to **Window > Package Manager**
+2. Click the **+** button and select **Add package from git URL...**
+3. Enter: `https://github.com/GlitchEnzo/NuGetForUnity.git?path=/src/NuGetForUnity`
+4. Click **Add**
+
+#### NetMQ
+1. After installing NuGetForUnity and relaunch the Unity Editor, go to **NuGet > Manage NuGet Packages**
+2. Search for **"NetMQ"**
+3. Select and install the appropriate version
+
+### Step 2: Install IRIS-Viz
+
+#### Option 1: Using Git URL (Recommended)
 Add the following to your `manifest.json` in your Unity project's `Packages` folder:
 
 ```json
@@ -27,43 +49,56 @@ Add the following to your `manifest.json` in your Unity project's `Packages` fol
 }
 ```
 
-### Option 2: Unity Package Manager
-
-1. Open the Package Manager in Unity (Window > Package Manager)
-2. Click the "+" button
-3. Select "Add package from git URL"
+#### Option 2: Unity Package Manager
+1. Open the Package Manager in Unity (**Window > Package Manager**)
+2. Click the **+** button
+3. Select **Add package from git URL**
 4. Enter: `https://github.com/intuitiverobotslab/IRIS-Viz.git`
 
-## Requirements
 
-- Unity 6000.0 or higher
-- NuGetForUnity (for handling NetMQ dependency)
-- NetMQ package (installed via NuGetForUnity)
+## Architecture
 
-## Usage
+IRIS-Viz consists of two primary components:
 
-```csharp
-using IRIS;
-using IntuitivoRobotsLab.IRIS_Viz;
+- **IRISClient**: Core communication layer that handles data transfer between sources and Unity
+- **SceneLoader**: Visualization toolkit for rendering 3D data within Unity scenes
 
-// Example code will be provided here
 ```
-
-## Structure
-
-- **IRISClient**: Core client functionality for connecting to data sources
-- **SceneLoader**: Tools for loading and visualizing 3D data in Unity scenes
+IRIS-Viz
+├── IRISClient
+│   ├── Communication
+│   ├── DataParsing
+│   └── Events
+└── SceneLoader
+    ├── MeshHandling
+    ├── PointCloudRendering
+    └── SceneManagement
+```
 
 ## Documentation
 
-For more detailed information, see the [Documentation](Documentation~/index.md).
+For complete API references, tutorials, and advanced usage scenarios, please refer to our [comprehensive documentation](Documentation~/index.md).
+
+## Examples
+
+The package includes several example scenes demonstrating different visualization capabilities:
+
+- Basic mesh visualization
+- Real-time point cloud streaming
+- Multi-object scene composition
+- Simulation-to-reality comparison
 
 ## License
 
-[Your License Information Here]
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## About Intuitive Robots Lab
+
+The [Intuitive Robots Lab](https://www.irl.iar.kit.edu/) at Karlsruhe Institute of Technology researches next-generation robotics systems with natural human-robot interaction and intuitive control mechanisms.
 
 ## Contact
 
 - **Developer**: Intuitive Robots Lab
 - **Email**: xinkai.jiang@kit.edu
 - **Website**: https://www.irl.iar.kit.edu/team.php
+- **GitHub**: [intuitiverobotslab](https://github.com/intuitiverobotslab)
