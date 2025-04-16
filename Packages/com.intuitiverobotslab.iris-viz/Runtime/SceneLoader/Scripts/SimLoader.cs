@@ -223,7 +223,8 @@ namespace IRIS.SceneLoader
                 mat.DisableKeyword("_ALPHAPREMULTIPLY_ON");
                 mat.renderQueue = 3000;
             }
-            mat.SetColor("_Color", new Color(simMat.color[0], simMat.color[1], simMat.color[2], simMat.color[3]));
+            // In URP, the set color function is using "_BaseColor" instead of "_Color"
+            mat.SetColor("_BaseColor", new Color(simMat.color[0], simMat.color[1], simMat.color[2], simMat.color[3]));
             if (simMat.emissionColor != null)
             {
                 mat.SetColor("_emissionColor", new Color(simMat.emissionColor[0], simMat.emissionColor[1], simMat.emissionColor[2], simMat.emissionColor[3]));
