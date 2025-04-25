@@ -17,13 +17,14 @@ public class PointCloudLoader : MonoBehaviour
         _particleSystem = GetComponent<ParticleSystem>();
         _pointCloudSubscriber = new Subscriber<byte[]>("PointCloud", UpdatePointCloud);
         IRISNetManager.Instance.OnConnectionStart += _pointCloudSubscriber.StartSubscription;
+
         Debug.Log("Connected to the server");
     }
 
     public static float[] ByteArrayToFloatArray(byte[] byteArray)
     {
-        if (byteArray == null || byteArray.Length % 4 != 0)
-            throw new ArgumentException("Invalid byte array length. Must be a multiple of 4.");
+        if (byteArray == null || byteArray.Length % 7 != 0)
+            throw new ArgumentException("Invalid byte array length. Must be a multiple of 7.");
 
         // Cast the byte array to a ReadOnlySpan<float>
         ReadOnlySpan<byte> byteSpan = byteArray;
@@ -35,7 +36,6 @@ public class PointCloudLoader : MonoBehaviour
 
     private void UpdatePointCloud(byte[] pointCloudMsg)
     {
-        Debug.Log("Received point cloud data");
         // Convert the byte array to a string
         float[] pointCloud = ByteArrayToFloatArray(pointCloudMsg);
         if (pointCloud.Length % 7 != 0)
@@ -50,14 +50,12 @@ public class PointCloudLoader : MonoBehaviour
             voxels = new ParticleSystem.Particle[pointNum];
             
         }
-        Debug.Log("pointNum: " + pointNum);
         for (int i = 0; i < pointNum; i++)
         {
             voxels[i].position = new Vector3(pointCloud[i * 7], pointCloud[i * 7 + 1], pointCloud[i * 7 + 2]);
             voxels[i].startColor = new Color(pointCloud[i * 7 + 3], pointCloud[i * 7 + 4], pointCloud[i * 7 + 5]);
             voxels[i].startSize = pointCloud[i * 7 + 6];
         }
-        Debug.Log("Set particles");
         _particleSystem.SetParticles(voxels);
     }
 

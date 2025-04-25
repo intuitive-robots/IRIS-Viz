@@ -313,6 +313,14 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 109883771592776350, guid: 126bffd15ec827eb9a4e421fcb306cc1, type: 3}
+      propertyPath: playOnAwake
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 109883771592776350, guid: 126bffd15ec827eb9a4e421fcb306cc1, type: 3}
+      propertyPath: InitialModule.size3D
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 2989093467393888740, guid: 126bffd15ec827eb9a4e421fcb306cc1, type: 3}
       propertyPath: m_LocalPosition.x
       value: 0
