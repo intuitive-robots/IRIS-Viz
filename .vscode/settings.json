@@ -56,5 +56,8 @@
         "temp/": true,
         "Temp/": true
     },
-    "dotnet.defaultSolution": "IRIS-Viz.sln"
+    "dotnet.defaultSolution": "IRIS-Viz.sln",
+    "cSpell.words": [
+        "IRISXR"
+    ]
 }

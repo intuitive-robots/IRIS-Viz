@@ -9,8 +9,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1548740708588539198}
-  - component: {fileID: 303850339559942064}
-  - component: {fileID: 5087798160889952808}
   - component: {fileID: 8679029595399024968}
   m_Layer: 0
   m_Name: SimLoader
@@ -34,31 +32,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 2989093467393888740}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &303850339559942064
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1365675326429729522}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: b181f1d35a19aae19ac9cd78e5c69be2, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  defaultMaterial: {fileID: 2100000, guid: 3a31435cb6eba2d488f380e6d5409476, type: 2}
---- !u!114 &5087798160889952808
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1365675326429729522}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 30e2d9a26b86985a29d76092b37ea1fb, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!114 &8679029595399024968
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -84,7 +57,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 6754673691395058120}
-  - component: {fileID: 219719940224057385}
   - component: {fileID: 109883771592776350}
   - component: {fileID: 2382968564912309503}
   m_Layer: 0
@@ -109,18 +81,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 2989093467393888740}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &219719940224057385
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1438596284966777694}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 9d026cb551afb45fda7bff2bd14c14e9, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!198 &109883771592776350
 ParticleSystem:
   m_ObjectHideFlags: 0
@@ -4930,7 +4890,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 2989093467393888740}
-  - component: {fileID: 8733984433773720821}
+  - component: {fileID: 7198612179491887767}
   m_Layer: 0
   m_Name: SceneLoader
   m_TagString: Untagged
@@ -4956,7 +4916,7 @@ Transform:
   - {fileID: 8152646073439715499}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &8733984433773720821
+--- !u!114 &7198612179491887767
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -4965,9 +4925,13 @@ MonoBehaviour:
   m_GameObject: {fileID: 3537466871457611858}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 55431ff9ddf4fded895886ab0cb23ad6, type: 3}
+  m_Script: {fileID: 11500000, guid: 4e4c8106baaae0d489138369a4fb1533, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  multicastAddress: 239.255.10.10
+  port: 7720
+  messageSendInterval: 1
+  serviceList: []
 --- !u!1001 &8154386258753193213
 PrefabInstance:
   m_ObjectHideFlags: 0

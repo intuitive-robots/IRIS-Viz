@@ -29,8 +29,8 @@ public class QRSceneAlignment : MonoBehaviour {
     [SerializeField] protected GameObject indicator;
     protected QRSceneAlignmentData _data;
     protected bool isTrackingQR = false;
-    private Service<QRSceneAlignmentData, string> startAlignmentService;
-    private Service<string, string> stopAlignmentService;
+    private IRISService<QRSceneAlignmentData, string> startAlignmentService;
+    private IRISService<string, string> stopAlignmentService;
 
     private void Start() {
         startAlignmentService = new("StartQRAlignment", StartQRAlignment);
