@@ -13,10 +13,10 @@
 // namespace IRIS.Node
 // {
 
-// 	public class IRISNetManager : MonoBehaviour
+// 	public class IRISXRNode : MonoBehaviour
 // 	{
 // 		// Singleton instance
-// 		public static IRISNetManager Instance { get; private set; }
+// 		public static IRISXRNode Instance { get; private set; }
 // 		// Node information
 // 		public NodeInfo localInfo { get; set; }
 // 		public NodeInfo masterInfo { get; set; }

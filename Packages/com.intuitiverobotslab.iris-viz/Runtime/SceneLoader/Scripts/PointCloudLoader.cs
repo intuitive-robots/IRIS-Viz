@@ -16,7 +16,7 @@
 //     {
 //         _particleSystem = GetComponent<ParticleSystem>();
 //         _pointCloudSubscriber = new Subscriber<byte[]>("PointCloud", UpdatePointCloud);
-//         IRISNetManager.Instance.OnConnectionStart += _pointCloudSubscriber.StartSubscription;
+//         IRISXRNode.Instance.OnConnectionStart += _pointCloudSubscriber.StartSubscription;
 
 //         Debug.Log("Connected to the server");
 //     }

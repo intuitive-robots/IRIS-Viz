@@ -9,7 +9,7 @@ using System.Collections.Generic;
 using NetMQ;
 using NetMQ.Sockets;
 using IRIS.Utilities;
-using Unity.Android.Gradle.Manifest;
+using System.Linq;
 
 namespace IRIS.Node
 {
@@ -32,10 +32,10 @@ namespace IRIS.Node
         private Task multicastTask;
         private Task serviceTask;
         private string multicastMessage;
-
+        public Action SubscriptionSpin;
         private NetMQRuntime runtime;
         private ResponseSocket _resSocket;
-        public Dictionary<string, Func<byte[], byte[]>> serviceCallbacks;
+        public Dictionary<string, Func<byte[][], byte[][]>> serviceCallbacks;
         public PublisherSocket _pubSocket;
         public List<string> serviceList;
         private List<NetMQSocket> _sockets;
@@ -105,6 +105,11 @@ namespace IRIS.Node
             InitializeUdpClient();
             multicastTask = StartMulticastTask(cancellationTokenSource.Token);
             serviceTask = StartServiceTask(cancellationTokenSource.Token);
+        }
+
+        void Update()
+        {
+            SubscriptionSpin?.Invoke();
         }
 
         private void InitializeUdpClient()
@@ -179,7 +184,7 @@ namespace IRIS.Node
                 {
                     // Use timeout to allow cancellation checks
                     List<byte[]> messageReceived = await Task.Run(() => _resSocket.ReceiveMultipartBytes(), cancellationToken);
-                    if (messageReceived.Count == 2)
+                    if (messageReceived.Count > 1)
                     {
                         // Extract service name from first frame
                         string serviceName = MsgUtils.Bytes2String(messageReceived[0]);
@@ -187,14 +192,19 @@ namespace IRIS.Node
                         if (serviceCallbacks.ContainsKey(serviceName))
                         {
                             // Run callback on background thread if it's CPU-intensive
-                            byte[] response = serviceCallbacks[serviceName](messageReceived[1]);
-                            _resSocket.SendFrame(response);
+                            byte[][] response = serviceCallbacks[serviceName](messageReceived.Skip(1).ToArray());
+                            _resSocket.SendMultipartBytes(response);
                         }
                         else
                         {
                             Debug.LogWarning($"Service {serviceName} not found");
                             _resSocket.SendFrame(IRISSignal.NOSERVICE);
                         }
+                    }
+                    else
+                    {
+                        Debug.LogWarning("Received message does not contain service name or request data");
+                        _resSocket.SendFrame(IRISSignal.ERROR);
                     }
                 }
                 catch (TimeoutException)
@@ -214,6 +224,9 @@ namespace IRIS.Node
                 }
             }
         }
+
+
+
 
 
         void SendMulticastMessage(string message)
