@@ -6,7 +6,6 @@ using System;
 namespace IRIS.SceneLoader
 {
 
-    // [Serializable]
     public class StreamMessage
     {
         public Dictionary<string, List<float>> updateData;
@@ -26,16 +25,15 @@ namespace IRIS.SceneLoader
 
         void Start()
         {
-            gameObject.GetComponent<SimSceneLoader>().OnSceneLoaded += StartSubscription;
             _subscriber = new Subscriber<StreamMessage>("SceneUpdate", SubscribeCallback);
         }
 
-        public void StartSubscription()
+        public void StartSubscription(string url)
         {
             _trans = gameObject.transform;
             _objectsTrans = gameObject.GetComponent<SimSceneLoader>().GetObjectsTrans();
             // timeOffset = IRISXRNode.Instance.TimeOffset;
-            _subscriber.StartSubscription();
+            _subscriber.StartSubscription(url);
         }
 
         public void StopSubscription()

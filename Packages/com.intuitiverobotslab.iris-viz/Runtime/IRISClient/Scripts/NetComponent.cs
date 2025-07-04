@@ -1,8 +1,6 @@
 using NetMQ;
 using NetMQ.Sockets;
 using System;
-using System.Text;
-using System.Collections.Generic;
 using Newtonsoft.Json;
 using UnityEngine;
 using IRIS.Utilities;
@@ -84,81 +82,30 @@ namespace IRIS.Node
 		protected string _topic;
 		protected SubscriberSocket _subSocket;
 		private Action<MsgType> _receiveAction;
-		private Func<byte[], MsgType> _onProcessMsg;
+		private Func<byte[], MsgType> onProcessMsg;
 
 		public Subscriber(string topic, Action<MsgType> receiveAction)
 		{
 			_topic = topic;
 			_receiveAction = receiveAction;
+			_subSocket = new SubscriberSocket();
 		}
 
-		public void StartSubscription()
+		public void StartSubscription(string url)
 		{
+			_subSocket.Connect(url);
+			_subSocket.Subscribe($"{_topic}");
 			IRISXRNode _XRNode = IRISXRNode.Instance;
-
-			// if (!_XRNode.masterInfo.topicList.Contains(_topic))
-			// {
-			// 	Debug.LogWarning($"Topic {_topic} is not found in the master node");
-			// 	return;
-			// }
-
-			if (typeof(MsgType) == typeof(string))
-			{
-				_onProcessMsg = OnReceiveAsString;
-			}
-			else if (typeof(MsgType) == typeof(byte[]))
-			{
-				_onProcessMsg = OnReceiveAsBytes;
-			}
-			else
-			{
-				_onProcessMsg = OnReceiveAsJson;
-			}
-			// else if (typeof(MsgType).IsSerializable)
-			// {
-			// 	_onProcessMsg = OnReceiveAsJson;
-			// }
-			// else
-			// {
-			// 	throw new NotSupportedException($"Type {typeof(MsgType)} is not supported for subscription.");
-			// }
-			// _XRNode.subscribeCallbacks[_topic] = OnReceive;
+			onProcessMsg = MsgUtils.CreateDecoderProcessor<MsgType>();
 			_XRNode.SubscriptionSpin += SubscriptionSpin;
 			Debug.Log($"Subscribed to topic {_topic}");
-		}
-
-		public static MsgType OnReceiveAsString(byte[] message)
-		{
-			if (typeof(MsgType) != typeof(string))
-			{
-				throw new InvalidOperationException($"Type mismatch: Expected {typeof(MsgType)}, but got string.");
-			}
-
-			string result = Encoding.UTF8.GetString(message);
-			return (MsgType)(object)result;
-		}
-
-		public static MsgType OnReceiveAsBytes(byte[] message)
-		{
-			if (typeof(MsgType) != typeof(byte[]))
-			{
-				throw new InvalidOperationException($"Type mismatch: Expected {typeof(MsgType)}, but got byte[].");
-			}
-
-			return (MsgType)(object)message;
-		}
-
-		public static MsgType OnReceiveAsJson(byte[] message)
-		{
-			string jsonString = Encoding.UTF8.GetString(message);
-			return JsonConvert.DeserializeObject<MsgType>(jsonString);
 		}
 
 		public void OnReceive(byte[] byteMessage)
 		{
 			try
 			{
-				MsgType msg = _onProcessMsg(byteMessage);
+				MsgType msg = onProcessMsg(byteMessage);
 				_receiveAction(msg);
 			}
 			catch (Exception ex)
@@ -166,7 +113,6 @@ namespace IRIS.Node
 				Debug.LogWarning($"Error processing message for topic {_topic}: {ex.Message}");
 			}
 		}
-
 
 		public void Unsubscribe()
 		{
@@ -176,14 +122,10 @@ namespace IRIS.Node
 
 		public void SubscriptionSpin()
 		{
-			// Only process the latest message of each topic
-			Dictionary<string, byte[]> messageProcessed = new();
 			if (_subSocket.HasIn)
 			{
-				List<byte[]> msgSeparated = _subSocket.ReceiveMultipartBytes();
-				string topic_name = MsgUtils.Bytes2String(msgSeparated[0]);
-				// Debug.Log($"Received message from {topic_name}");
-				OnReceive(msgSeparated[1]);
+				byte[] msgBytes = _subSocket.ReceiveFrameBytes();
+				OnReceive(msgBytes);
 			}
 		}
 	}

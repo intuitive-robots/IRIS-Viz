@@ -96,7 +96,7 @@ namespace IRIS.SceneLoader
             Debug.Log($"Created SimObject: {simObject.name}");
         }
 
-        public void CreateSimVisual(SimVisual simVisual, byte[] meshBytes, byte[] materialBytes)
+        public void CreateSimVisual(SimVisual simVisual, byte[] meshBytes, byte[] textureBytes)
         {
             if (!_simObjTransDict.ContainsKey(simVisual.objName))
             {
@@ -135,7 +135,7 @@ namespace IRIS.SceneLoader
                     Debug.LogWarning($"Unknown SimVisual type {simVisual.type}, creating an empty GameObject.");
                     return;
             }
-            BuildMaterial(simVisual.material, visualObj, materialBytes);
+            BuildMaterial(simVisual.material, visualObj, textureBytes);
             // Renderer renderer = visualObj.GetComponent<Renderer>();
             // Debug.LogWarning($"Parent not found for {simVisual.objName}, setting to root.");
             visualObj.transform.SetParent(_simObjTransDict[simVisual.objName], false);
@@ -154,7 +154,7 @@ namespace IRIS.SceneLoader
             };
         }
 
-        public void BuildMaterial(SimMaterial simMat, GameObject visualObj, byte[] materialBytes)
+        public void BuildMaterial(SimMaterial simMat, GameObject visualObj, byte[] textureBytes)
         {
             Material mat = new Material(defaultMaterial);
             if (simMat.color.Count == 3)
@@ -188,18 +188,34 @@ namespace IRIS.SceneLoader
             mat.SetFloat("_Smoothness", simMat.shininess);
             mat.SetFloat("_GlossyReflections", simMat.reflectance);
             visualObj.GetComponent<Renderer>().material = mat;
-            // if (simMat.texture != null)
-            // {
-            //     // Debug.Log($"Texture found for {objName}");
-            //     SimTexture simTex = simMat.texture;
-            //     if (!_pendingTexture.ContainsKey(simTex.hash))
-            //     {
-            //         _pendingTexture[simTex.hash] = new();
-            //     }
-            //     _pendingTexture[simTex.hash].Add(new(simTex, mat));
-            // }
+            if (simMat.texture != null)
+            {
+                BuildTexture(simMat.texture, mat, textureBytes);
+            }
+            else
+            {
+                Debug.LogWarning($"No texture found for {visualObj.name}, using default material.");
+            }
             // return mat;
         }
+
+        public void BuildTexture(SimTexture simTex, Material mat, byte[] textureBytes)
+        {
+            // if (textureBytes == null || textureBytes.Length == 0)
+            // {
+            //     Debug.LogWarning($"No texture data found for {simTex.name}, using default material.");
+            //     return;
+            // }
+            // Texture2D texture = new Texture2D(2, 2);
+            // texture.LoadImage(textureBytes);
+            // mat.mainTexture = texture;
+            Texture2D tex = new Texture2D(simTex.width, simTex.height, TextureFormat.RGB24, false);
+            tex.LoadRawTextureData(textureBytes);
+            tex.Apply();
+            mat.mainTexture = tex;
+            mat.mainTextureScale = new Vector2(simTex.textureScale[0], simTex.textureScale[1]);
+        }
+
 
         public static T[] DecodeArray<T>(byte[] data, int start, int length) where T : struct
         {

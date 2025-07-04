@@ -11,6 +11,7 @@ GameObject:
   - component: {fileID: 2989093467393888740}
   - component: {fileID: 3832913325496844298}
   - component: {fileID: 3230328525617688078}
+  - component: {fileID: 5355530609928731608}
   m_Layer: 0
   m_Name: SimSceneLoader
   m_TagString: Untagged
@@ -64,6 +65,18 @@ MonoBehaviour:
   lightHeight: 10
   lightOffset: 10
   lightColor: {r: 1, g: 1, b: 1, a: 1}
+--- !u!114 &5355530609928731608
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3537466871457611858}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 30e2d9a26b86985a29d76092b37ea1fb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1001 &8154386258753193213
 PrefabInstance:
   m_ObjectHideFlags: 0

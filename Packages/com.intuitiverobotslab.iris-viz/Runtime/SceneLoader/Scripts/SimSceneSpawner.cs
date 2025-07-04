@@ -31,6 +31,7 @@ namespace IRIS.SceneLoader
             serviceDict["CreateSimObject"] = new IRISService<SimObject, string>("CreateSimObject", CreateSimObject, true);
             serviceDict["CreateVisual"] = new IRISService<SimVisual, byte[], byte[], string>("CreateVisual", CreateSimVisual, true);
             serviceDict["DeleteSimScene"] = new IRISService<string, string>("DeleteSimScene", DeleteSimScene, true);
+            serviceDict["SubscribeRigidObjectsController"] = new IRISService<string, string>("SubscribeRigidObjectsController", SubscribeRigidObjectsController, true);
         }
 
 
@@ -98,7 +99,7 @@ namespace IRIS.SceneLoader
             }
         }
 
-        private string CreateSimVisual(SimVisual simVisual, byte[] meshBytes, byte[] materialBytes)
+        private string CreateSimVisual(SimVisual simVisual, byte[] meshBytes, byte[] textureBytes)
         {
             SimSceneLoader simSceneLoader = _simSceneDict[simVisual.sceneName].GetComponent<SimSceneLoader>();
             if (simSceneLoader == null)
@@ -109,9 +110,21 @@ namespace IRIS.SceneLoader
             RunOnMainThread(
                 () =>
                 {
-                    simSceneLoader.CreateSimVisual(simVisual, meshBytes, materialBytes);
+                    simSceneLoader.CreateSimVisual(simVisual, meshBytes, textureBytes);
                 }
             );
+            return IRISSignal.SUCCESS;
+        }
+
+        private string SubscribeRigidObjectsController(string url)
+        {
+            RigidObjectsController rigidObjectsController = gameObject.GetComponent<RigidObjectsController>();
+            if (rigidObjectsController == null)
+            {
+                Debug.LogError("RigidObjectsController component not found on the GameObject.");
+                return IRISSignal.ERROR;
+            }
+            rigidObjectsController.StartSubscription(url);
             return IRISSignal.SUCCESS;
         }
 
