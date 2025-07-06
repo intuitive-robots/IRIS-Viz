@@ -31,13 +31,11 @@ namespace IRIS.SceneLoader
 	public class SimAsset
 	{
 		public string name;
-		public string sceneName;
 	}
 
 	public class SimVisual : SimAsset
 	{
 		public string type;
-		public string objName;
 		public SimMesh mesh;
 		public SimMaterial material;
 		public IRISTransform trans;
@@ -46,11 +44,7 @@ namespace IRIS.SceneLoader
 
 	public class SimObject : SimAsset
 	{
-		public string parentName;
-		// public string sceneName;
 		public IRISTransform trans;
-		// public List<SimVisual> visuals;
-		// public List<SimObject> children;
 	}
 
 	public class SimScene : SimAsset

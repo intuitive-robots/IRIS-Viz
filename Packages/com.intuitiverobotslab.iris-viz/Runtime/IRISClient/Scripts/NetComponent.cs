@@ -4,6 +4,7 @@ using System;
 using Newtonsoft.Json;
 using UnityEngine;
 using IRIS.Utilities;
+using System.Collections.Generic;
 
 
 namespace IRIS.Node
@@ -91,10 +92,14 @@ namespace IRIS.Node
 			_subSocket = new SubscriberSocket();
 		}
 
-		public void StartSubscription(string url)
+		public void StartSubscription(string url, string topicName = null)
 		{
 			_subSocket.Connect(url);
-			_subSocket.Subscribe($"{_topic}");
+			if (topicName == null)
+			{
+				topicName = _topic;
+			}
+			_subSocket.Subscribe(topicName);
 			IRISXRNode _XRNode = IRISXRNode.Instance;
 			onProcessMsg = MsgUtils.CreateDecoderProcessor<MsgType>();
 			_XRNode.SubscriptionSpin += SubscriptionSpin;
@@ -124,8 +129,15 @@ namespace IRIS.Node
 		{
 			if (_subSocket.HasIn)
 			{
-				byte[] msgBytes = _subSocket.ReceiveFrameBytes();
-				OnReceive(msgBytes);
+				List<byte[]> msgBytes = _subSocket.ReceiveMultipartBytes();
+				// Debug.Log($"Received message {MsgUtils.Bytes2String(msgBytes[0])} on topic {_topic}");
+				string topicName = MsgUtils.Bytes2String(msgBytes[0]);
+				if (topicName != _topic)
+				{
+					Debug.LogWarning($"Received message on topic {topicName}, but subscribed to {_topic}");
+					return;
+				}
+				OnReceive(msgBytes[1]);
 			}
 		}
 	}
@@ -218,49 +230,187 @@ namespace IRIS.Node
 	}
 
 
+	public class IRISService<RequestType1, RequestType2, ResponseType> : IRISService
+	{
+		public readonly Func<RequestType1, RequestType2, ResponseType> _onRequest;
+		public Func<byte[], RequestType1> ProcessRequest1Func;
+		public Func<byte[], RequestType2> ProcessRequest2Func;
+		public Func<ResponseType, byte[]> ProcessResponseFunc;
+
+		public IRISService(string serviceName, Func<RequestType1, RequestType2, ResponseType> onRequest, bool globalNameSpace = false)
+			: base(serviceName, globalNameSpace)
+		{
+			_onRequest = onRequest ?? throw new ArgumentNullException(nameof(onRequest));
+
+			// Use helper methods
+			ProcessRequest1Func = MsgUtils.CreateDecoderProcessor<RequestType1>();
+			ProcessRequest2Func = MsgUtils.CreateDecoderProcessor<RequestType2>();
+			ProcessResponseFunc = MsgUtils.CreateEncoderProcessor<ResponseType>();
+		}
+
+		public override byte[][] BytesCallback(byte[][] bytes)
+		{
+			try
+			{
+				// Expecting exactly 2 byte arrays for the two request types
+				if (bytes.Length != 2)
+				{
+					throw new ArgumentException("Expected 2 byte arrays for RequestType1 and RequestType2");
+				}
+
+				RequestType1 request1 = ProcessRequest1Func(bytes[0]);
+				RequestType2 request2 = ProcessRequest2Func(bytes[1]);
+				ResponseType response = _onRequest(request1, request2);
+				return new byte[][] { ProcessResponseFunc(response) };
+			}
+			catch (Exception ex)
+			{
+				Debug.LogWarning($"Error processing request for service {Name}: {ex.Message}");
+				return new byte[][] { HandleErrorResponse(ex) };
+			}
+		}
+	}
+
+
 	public class IRISService<RequestType1, RequestType2, RequestType3, ResponseType> : IRISService
 	{
-	public readonly Func<RequestType1, RequestType2, RequestType3, ResponseType> _onRequest;
-	public Func<byte[], RequestType1> ProcessRequest1Func;
-	public Func<byte[], RequestType2> ProcessRequest2Func;
-	public Func<byte[], RequestType3> ProcessRequest3Func;
-	public Func<ResponseType, byte[]> ProcessResponseFunc;
+		public readonly Func<RequestType1, RequestType2, RequestType3, ResponseType> _onRequest;
+		public Func<byte[], RequestType1> ProcessRequest1Func;
+		public Func<byte[], RequestType2> ProcessRequest2Func;
+		public Func<byte[], RequestType3> ProcessRequest3Func;
+		public Func<ResponseType, byte[]> ProcessResponseFunc;
 
-	public IRISService(string serviceName, Func<RequestType1, RequestType2, RequestType3, ResponseType> onRequest, bool globalNameSpace = false)
-		: base(serviceName, globalNameSpace)
-	{
-		_onRequest = onRequest ?? throw new ArgumentNullException(nameof(onRequest));
-		
-		// Use helper methods
-		ProcessRequest1Func = MsgUtils.CreateDecoderProcessor<RequestType1>();
-		ProcessRequest2Func = MsgUtils.CreateDecoderProcessor<RequestType2>();
-		ProcessRequest3Func = MsgUtils.CreateDecoderProcessor<RequestType3>();
-		ProcessResponseFunc = MsgUtils.CreateEncoderProcessor<ResponseType>();
-	}
-
-	public override byte[][] BytesCallback(byte[][] bytes)
-	{
-		try
+		public IRISService(string serviceName, Func<RequestType1, RequestType2, RequestType3, ResponseType> onRequest, bool globalNameSpace = false)
+			: base(serviceName, globalNameSpace)
 		{
-			// Expecting at least 3 byte arrays for the three request types
-			if (bytes.Length != 3)
+			_onRequest = onRequest ?? throw new ArgumentNullException(nameof(onRequest));
+
+			// Use helper methods
+			ProcessRequest1Func = MsgUtils.CreateDecoderProcessor<RequestType1>();
+			ProcessRequest2Func = MsgUtils.CreateDecoderProcessor<RequestType2>();
+			ProcessRequest3Func = MsgUtils.CreateDecoderProcessor<RequestType3>();
+			ProcessResponseFunc = MsgUtils.CreateEncoderProcessor<ResponseType>();
+		}
+
+		public override byte[][] BytesCallback(byte[][] bytes)
+		{
+			try
 			{
-				throw new ArgumentException("Expected 3 byte arrays for RequestType1, RequestType2, and RequestType3");
+				// Expecting at least 3 byte arrays for the three request types
+				if (bytes.Length != 3)
+				{
+					throw new ArgumentException("Expected 3 byte arrays for RequestType1, RequestType2, and RequestType3");
+				}
+				RequestType1 request1 = ProcessRequest1Func(bytes[0]);
+				RequestType2 request2 = ProcessRequest2Func(bytes[1]);
+				RequestType3 request3 = ProcessRequest3Func(bytes[2]);
+				ResponseType response = _onRequest(request1, request2, request3);
+				return new byte[][] { ProcessResponseFunc(response) };
 			}
-			RequestType1 request1 = ProcessRequest1Func(bytes[0]);
-			RequestType2 request2 = ProcessRequest2Func(bytes[1]);
-			RequestType3 request3 = ProcessRequest3Func(bytes[2]);
-			ResponseType response = _onRequest(request1, request2, request3);
-			return new byte[][] { ProcessResponseFunc(response) };
+			catch (Exception ex)
+			{
+				Debug.LogWarning($"Error processing request for service {Name}: {ex.Message}");
+				return new byte[][] { HandleErrorResponse(ex) };
+			}
 		}
-		catch (Exception ex)
+
+	}
+
+	public class IRISService<RequestType1, RequestType2, RequestType3, RequestType4, ResponseType> : IRISService
+	{
+		public readonly Func<RequestType1, RequestType2, RequestType3, RequestType4, ResponseType> _onRequest;
+		public Func<byte[], RequestType1> ProcessRequest1Func;
+		public Func<byte[], RequestType2> ProcessRequest2Func;
+		public Func<byte[], RequestType3> ProcessRequest3Func;
+		public Func<byte[], RequestType4> ProcessRequest4Func;
+		public Func<ResponseType, byte[]> ProcessResponseFunc;
+
+		public IRISService(string serviceName, Func<RequestType1, RequestType2, RequestType3, RequestType4, ResponseType> onRequest, bool globalNameSpace = false)
+			: base(serviceName, globalNameSpace)
 		{
-			Debug.LogWarning($"Error processing request for service {Name}: {ex.Message}");
-			return new byte[][] { HandleErrorResponse(ex) };
+			_onRequest = onRequest ?? throw new ArgumentNullException(nameof(onRequest));
+
+			// Use helper methods
+			ProcessRequest1Func = MsgUtils.CreateDecoderProcessor<RequestType1>();
+			ProcessRequest2Func = MsgUtils.CreateDecoderProcessor<RequestType2>();
+			ProcessRequest3Func = MsgUtils.CreateDecoderProcessor<RequestType3>();
+			ProcessRequest4Func = MsgUtils.CreateDecoderProcessor<RequestType4>();
+			ProcessResponseFunc = MsgUtils.CreateEncoderProcessor<ResponseType>();
+		}
+
+		public override byte[][] BytesCallback(byte[][] bytes)
+		{
+			try
+			{
+				// Expecting exactly 4 byte arrays for the four request types
+				if (bytes.Length != 4)
+				{
+					throw new ArgumentException("Expected 4 byte arrays for RequestType1, RequestType2, RequestType3, and RequestType4");
+				}
+
+				RequestType1 request1 = ProcessRequest1Func(bytes[0]);
+				RequestType2 request2 = ProcessRequest2Func(bytes[1]);
+				RequestType3 request3 = ProcessRequest3Func(bytes[2]);
+				RequestType4 request4 = ProcessRequest4Func(bytes[3]);
+				ResponseType response = _onRequest(request1, request2, request3, request4);
+				return new byte[][] { ProcessResponseFunc(response) };
+			}
+			catch (Exception ex)
+			{
+				Debug.LogWarning($"Error processing request for service {Name}: {ex.Message}");
+				return new byte[][] { HandleErrorResponse(ex) };
+			}
 		}
 	}
 
-	}
+	public class IRISService<RequestType1, RequestType2, RequestType3, RequestType4, RequestType5, ResponseType> : IRISService
+	{
+		public readonly Func<RequestType1, RequestType2, RequestType3, RequestType4, RequestType5, ResponseType> _onRequest;
+		public Func<byte[], RequestType1> ProcessRequest1Func;
+		public Func<byte[], RequestType2> ProcessRequest2Func;
+		public Func<byte[], RequestType3> ProcessRequest3Func;
+		public Func<byte[], RequestType4> ProcessRequest4Func;
+		public Func<byte[], RequestType5> ProcessRequest5Func;
+		public Func<ResponseType, byte[]> ProcessResponseFunc;
 
+		public IRISService(string serviceName, Func<RequestType1, RequestType2, RequestType3, RequestType4, RequestType5, ResponseType> onRequest, bool globalNameSpace = false)
+			: base(serviceName, globalNameSpace)
+		{
+			_onRequest = onRequest ?? throw new ArgumentNullException(nameof(onRequest));
+			
+			// Use helper methods
+			ProcessRequest1Func = MsgUtils.CreateDecoderProcessor<RequestType1>();
+			ProcessRequest2Func = MsgUtils.CreateDecoderProcessor<RequestType2>();
+			ProcessRequest3Func = MsgUtils.CreateDecoderProcessor<RequestType3>();
+			ProcessRequest4Func = MsgUtils.CreateDecoderProcessor<RequestType4>();
+			ProcessRequest5Func = MsgUtils.CreateDecoderProcessor<RequestType5>();
+			ProcessResponseFunc = MsgUtils.CreateEncoderProcessor<ResponseType>();
+		}
+
+		public override byte[][] BytesCallback(byte[][] bytes)
+		{
+			try
+			{
+				// Expecting exactly 5 byte arrays for the five request types
+				if (bytes.Length != 5)
+				{
+					throw new ArgumentException("Expected 5 byte arrays for RequestType1, RequestType2, RequestType3, RequestType4, and RequestType5");
+				}
+				
+				RequestType1 request1 = ProcessRequest1Func(bytes[0]);
+				RequestType2 request2 = ProcessRequest2Func(bytes[1]);
+				RequestType3 request3 = ProcessRequest3Func(bytes[2]);
+				RequestType4 request4 = ProcessRequest4Func(bytes[3]);
+				RequestType5 request5 = ProcessRequest5Func(bytes[4]);
+				ResponseType response = _onRequest(request1, request2, request3, request4, request5);
+				return new byte[][] { ProcessResponseFunc(response) };
+			}
+			catch (Exception ex)
+			{
+				Debug.LogWarning($"Error processing request for service {Name}: {ex.Message}");
+				return new byte[][] { HandleErrorResponse(ex) };
+			}
+		}
+	}
 
 }

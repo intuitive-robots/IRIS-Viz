@@ -13,10 +13,9 @@ using System.Linq;
 
 namespace IRIS.Node
 {
-
-    public class IRISXRNode : MonoBehaviour
+    [DefaultExecutionOrder(-100)]
+    public class IRISXRNode : Singleton<IRISXRNode>
     {
-        public static IRISXRNode Instance { get; private set; }
 
         public NodeInfo localInfo { get; set; }
         private string localID { get; set; }
@@ -41,15 +40,8 @@ namespace IRIS.Node
         private List<NetMQSocket> _sockets;
         private Dictionary<string, INetComponent> serviceDict;
 
-        void Awake()
+        void Start()
         {
-            // Singleton pattern
-            if (Instance != null && Instance != this)
-            {
-                Destroy(gameObject);
-                return;
-            }
-            Instance = this;
             // NOTE: This is not necessary use DontDestroyOnLoad
             // DontDestroyOnLoad(gameObject);
             // Force to use .NET implementation of NetMQ
@@ -90,12 +82,6 @@ namespace IRIS.Node
             Debug.Log("IRISXRNode initialized");
             // cancellationTokenSource = new CancellationTokenSource();
 
-        }
-
-
-
-        void Start()
-        {
             Debug.Log("IRISXRNode started");
             InitializeService();
 
@@ -226,9 +212,6 @@ namespace IRIS.Node
         }
 
 
-
-
-
         void SendMulticastMessage(string message)
         {
             try
@@ -243,7 +226,7 @@ namespace IRIS.Node
 
                 byte[] data = Encoding.UTF8.GetBytes(message);
                 udpClient.Send(data, data.Length, remoteEndPoint);
-                Debug.Log("Sent: " + message);
+                // Debug.Log("Sent: " + message);
             }
             catch (Exception e)
             {

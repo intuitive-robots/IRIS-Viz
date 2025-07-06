@@ -74,7 +74,7 @@ namespace IRIS.SceneLoader
         }
 
 
-        public void CreateSimObject(SimObject simObject)
+        public void CreateSimObject(string parentName, SimObject simObject)
         {
             if (_simObjectDict.ContainsKey(simObject.name))
             {
@@ -82,25 +82,25 @@ namespace IRIS.SceneLoader
                 return;
             }
             GameObject newSimGameObject = new GameObject(simObject.name);
-            if (!_simObjTransDict.ContainsKey(simObject.parentName))
+            if (!_simObjTransDict.ContainsKey(parentName))
             {
-                Debug.Log($"Parent found for {simObject.name}: {simObject.parentName}");
+                Debug.Log($"Parent found for {simObject.name}: {parentName}");
                 newSimGameObject.transform.SetParent(transform, false);
             }
             else
             {
-                newSimGameObject.transform.SetParent(_simObjTransDict[simObject.parentName], false);
+                newSimGameObject.transform.SetParent(_simObjTransDict[parentName], false);
             }
             RegisterGameObject(simObject, newSimGameObject);
             ApplyTransform(newSimGameObject.transform, simObject.trans);
             Debug.Log($"Created SimObject: {simObject.name}");
         }
 
-        public void CreateSimVisual(SimVisual simVisual, byte[] meshBytes, byte[] textureBytes)
+        public void CreateSimVisual(string objName, SimVisual simVisual, byte[] meshBytes, byte[] textureBytes)
         {
-            if (!_simObjTransDict.ContainsKey(simVisual.objName))
+            if (!_simObjTransDict.ContainsKey(objName))
             {
-                Debug.LogWarning($"SimObject with name {simVisual.objName} not found, creating a new one.");
+                Debug.LogWarning($"SimObject with name {objName} not found, creating a new one.");
                 return;
             }
             GameObject visualObj;
@@ -125,7 +125,7 @@ namespace IRIS.SceneLoader
                     visualObj = new GameObject(simVisual.name, typeof(MeshFilter), typeof(MeshRenderer));
                     if (simVisual.mesh == null)
                     {
-                        Debug.LogWarning($"SimVisual {simVisual.objName} has no mesh data, creating an empty GameObject.");
+                        Debug.LogWarning($"SimVisual {objName} has no mesh data, creating an empty GameObject.");
                         return;
                     }
                     BuildMesh(simVisual.mesh, visualObj, meshBytes);
@@ -138,7 +138,7 @@ namespace IRIS.SceneLoader
             BuildMaterial(simVisual.material, visualObj, textureBytes);
             // Renderer renderer = visualObj.GetComponent<Renderer>();
             // Debug.LogWarning($"Parent not found for {simVisual.objName}, setting to root.");
-            visualObj.transform.SetParent(_simObjTransDict[simVisual.objName], false);
+            visualObj.transform.SetParent(_simObjTransDict[objName], false);
             ApplyTransform(visualObj.transform, simVisual.trans);
         }
 

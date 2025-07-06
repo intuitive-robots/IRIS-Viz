@@ -25,7 +25,7 @@ namespace IRIS.SceneLoader
 
         void Start()
         {
-            _subscriber = new Subscriber<StreamMessage>("SceneUpdate", SubscribeCallback);
+            _subscriber = new Subscriber<StreamMessage>("RigidObjectUpdate", SubscribeCallback);
         }
 
         public void StartSubscription(string url)
@@ -47,6 +47,10 @@ namespace IRIS.SceneLoader
             lastSimulationTimeStamp = streamMsg.time;
             foreach (var (name, value) in streamMsg.updateData)
             {
+                if (!_objectsTrans.ContainsKey(name))
+                {
+                    continue;
+                }
                 _objectsTrans[name].position = transform.TransformPoint(new Vector3(value[0], value[1], value[2]));
                 _objectsTrans[name].rotation = _trans.rotation * new Quaternion(value[3], value[4], value[5], value[6]);
             }
