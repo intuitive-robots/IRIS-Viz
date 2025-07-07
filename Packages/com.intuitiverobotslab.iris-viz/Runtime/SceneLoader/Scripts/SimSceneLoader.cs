@@ -201,14 +201,6 @@ namespace IRIS.SceneLoader
 
         public void BuildTexture(SimTexture simTex, Material mat, byte[] textureBytes)
         {
-            // if (textureBytes == null || textureBytes.Length == 0)
-            // {
-            //     Debug.LogWarning($"No texture data found for {simTex.name}, using default material.");
-            //     return;
-            // }
-            // Texture2D texture = new Texture2D(2, 2);
-            // texture.LoadImage(textureBytes);
-            // mat.mainTexture = texture;
             Texture2D tex = new Texture2D(simTex.width, simTex.height, TextureFormat.RGB24, false);
             tex.LoadRawTextureData(textureBytes);
             tex.Apply();

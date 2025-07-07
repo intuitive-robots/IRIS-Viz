@@ -4,7 +4,6 @@ using System;
 using Newtonsoft.Json;
 using UnityEngine;
 using IRIS.Utilities;
-using System.Collections.Generic;
 
 
 namespace IRIS.Node
@@ -99,11 +98,11 @@ namespace IRIS.Node
 			{
 				topicName = _topic;
 			}
-			_subSocket.Subscribe(topicName);
+			_subSocket.Subscribe("");
 			IRISXRNode _XRNode = IRISXRNode.Instance;
 			onProcessMsg = MsgUtils.CreateDecoderProcessor<MsgType>();
 			_XRNode.SubscriptionSpin += SubscriptionSpin;
-			Debug.Log($"Subscribed to topic {_topic}");
+			Debug.Log($"Subscribed to topic {_topic} at {url}");
 		}
 
 		public void OnReceive(byte[] byteMessage)
@@ -127,17 +126,18 @@ namespace IRIS.Node
 
 		public void SubscriptionSpin()
 		{
-			if (_subSocket.HasIn)
+			byte[] latestMessage = null;
+			
+			// Keep reading until no more messages are available
+			while (_subSocket.TryReceiveFrameBytes(TimeSpan.Zero, out byte[] message))
 			{
-				List<byte[]> msgBytes = _subSocket.ReceiveMultipartBytes();
-				// Debug.Log($"Received message {MsgUtils.Bytes2String(msgBytes[0])} on topic {_topic}");
-				string topicName = MsgUtils.Bytes2String(msgBytes[0]);
-				if (topicName != _topic)
-				{
-					Debug.LogWarning($"Received message on topic {topicName}, but subscribed to {_topic}");
-					return;
-				}
-				OnReceive(msgBytes[1]);
+				latestMessage = message;
+			}
+			
+			// Process only the latest message if any were received
+			if (latestMessage != null)
+			{
+				OnReceive(latestMessage);
 			}
 		}
 	}

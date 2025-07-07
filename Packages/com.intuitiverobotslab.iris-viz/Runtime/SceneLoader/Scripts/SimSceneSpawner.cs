@@ -30,25 +30,6 @@ namespace IRIS.SceneLoader
             serviceDict["SubscribeRigidObjectsController"] = new IRISService<string, string, string, string>("SubscribeRigidObjectsController", SubscribeRigidObjectsController, true);
         }
 
-
-        void RunOnMainThread(Action action)
-        {
-            lock (updateActionLock)
-            {
-                updateAction += action;
-            }
-        }
-
-        void Update()
-        {
-            lock (updateActionLock)
-            {
-                updateAction.Invoke();
-                updateAction = () => { };
-            }
-        }
-
-
         private string SpawnSimScene(SimScene simScene)
         {
             if (_simSceneDict.ContainsKey(simScene.name))

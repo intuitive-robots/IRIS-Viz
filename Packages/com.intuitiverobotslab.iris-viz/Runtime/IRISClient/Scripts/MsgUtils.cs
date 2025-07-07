@@ -3,7 +3,6 @@ using System;
 using System.IO;
 using System.Text;
 using Newtonsoft.Json;
-using IRIS.Node;
 
 namespace IRIS.Utilities
 {
@@ -91,7 +90,6 @@ namespace IRIS.Utilities
 		public static T BytesDeserialize2Object<T>(byte[] byteMessage)
 		{
 			string jsonString = Encoding.UTF8.GetString(byteMessage);
-			// Debug.Log(jsonString);
 			return JsonConvert.DeserializeObject<T>(jsonString);
 		}
 
