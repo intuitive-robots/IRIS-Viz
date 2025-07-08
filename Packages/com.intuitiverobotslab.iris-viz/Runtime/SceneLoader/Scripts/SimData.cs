@@ -5,7 +5,7 @@ using UnityEngine;
 namespace IRIS.SceneLoader
 {
 
-	public class SimTransform
+	public class IRISTransform
 	{
 		public List<float> pos;
 		public List<float> rot;
@@ -28,33 +28,31 @@ namespace IRIS.SceneLoader
 
 	}
 
-	public class SimVisual
-	{
-		public string type;
-		public SimMesh mesh;
-		public SimMaterial material;
-		public SimTransform trans;
-	}
-
-	public class SimBody
-	{
-		public string name;
-		public SimTransform trans;
-		public List<SimVisual> visuals;
-		public List<SimBody> children;
-	}
-
-	public class SimScene
-	{
-		public string id;
-		public SimBody root;
-	}
-
-	
 	public class SimAsset
 	{
 		public string name;
 	}
+
+	public class SimVisual : SimAsset
+	{
+		public string type;
+		public SimMesh mesh;
+		public SimMaterial material;
+		public IRISTransform trans;
+	}
+
+
+	public class SimObject : SimAsset
+	{
+		public IRISTransform trans;
+	}
+
+	public class SimScene : SimAsset
+	{
+		// public SimObject root;
+	}
+
+	
 
 	
 	public class SimMesh : SimAsset

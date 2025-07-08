@@ -6,37 +6,27 @@ using System;
 namespace IRIS.SceneLoader
 {
 
-    // [Serializable]
-    public class StreamMessage
-    {
-        public Dictionary<string, List<float>> updateData;
-        public float time;
-    }
+    [Serializable]
+    public class StreamMessage : Dictionary<string, List<float>> {}
 
-    [RequireComponent(typeof(SimLoader))]
+    [RequireComponent(typeof(SimSceneLoader))]
     public class RigidObjectsController : MonoBehaviour
     {
-        private float lastSimulationTimeStamp = 0.0f;
         public Dictionary<string, Transform> _objectsTrans;
         private Transform _trans;
-        private float timeOffset = 0.0f;
-        private float frameCounter = 0;
-        private float timeDelay = 0;
         private Subscriber<StreamMessage> _subscriber;
 
         void Start()
         {
-            gameObject.GetComponent<SimLoader>().OnSceneLoaded += StartSubscription;
-            IRISNetManager.Instance.OnDisconnected += StopSubscription;
-            _subscriber = new Subscriber<StreamMessage>("SceneUpdate", SubscribeCallback);
+            _subscriber = new Subscriber<StreamMessage>("RigidObjectUpdate", SubscribeCallback);
         }
 
-        public void StartSubscription()
+        public void StartSubscription(string url)
         {
             _trans = gameObject.transform;
-            _objectsTrans = gameObject.GetComponent<SimLoader>().GetObjectsTrans();
-            // timeOffset = IRISNetManager.Instance.TimeOffset;
-            _subscriber.StartSubscription();
+            _objectsTrans = gameObject.GetComponent<SimSceneLoader>().GetObjectsTrans();
+            // timeOffset = IRISXRNode.Instance.TimeOffset;
+            _subscriber.StartSubscription(url);
         }
 
         public void StopSubscription()
@@ -46,22 +36,15 @@ namespace IRIS.SceneLoader
 
         public void SubscribeCallback(StreamMessage streamMsg)
         {
-            if (streamMsg.time < lastSimulationTimeStamp) return;
-            lastSimulationTimeStamp = streamMsg.time;
-            foreach (var (name, value) in streamMsg.updateData)
+            foreach (var (name, value) in streamMsg)
             {
+                if (!_objectsTrans.ContainsKey(name))
+                {
+                    continue;
+                }
                 _objectsTrans[name].position = transform.TransformPoint(new Vector3(value[0], value[1], value[2]));
                 _objectsTrans[name].rotation = _trans.rotation * new Quaternion(value[3], value[4], value[5], value[6]);
             }
-            timeDelay += Time.realtimeSinceStartup - streamMsg.time - timeOffset;
-            frameCounter++;
-            // measure latency every 1000 frames
-            // if (frameCounter == 1000)
-            // {
-            //     Debug.Log($"Average Latency in the last 1000 frames: {timeDelay} ms");
-            //     timeDelay = 0;
-            //     frameCounter = 0;
-            // }
         }
 
     }

@@ -60,12 +60,12 @@ Add the following to your `manifest.json` in your Unity project's `Packages` fol
 
 IRIS-Viz consists of two primary components:
 
-- **IRISClient**: Core communication layer that handles data transfer between sources and Unity
+- **IRISNode**: Core communication layer that handles data transfer between sources and Unity
 - **SceneLoader**: Visualization toolkit for rendering 3D data within Unity scenes
 
 ```
 IRIS-Viz
-├── IRISClient
+├── IRISNode
 │   ├── Communication
 │   ├── DataParsing
 │   └── Events

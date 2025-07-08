@@ -3,7 +3,6 @@ using System;
 using System.IO;
 using System.Text;
 using Newtonsoft.Json;
-using IRIS.Node;
 
 namespace IRIS.Utilities
 {
@@ -91,13 +90,47 @@ namespace IRIS.Utilities
 		public static T BytesDeserialize2Object<T>(byte[] byteMessage)
 		{
 			string jsonString = Encoding.UTF8.GetString(byteMessage);
-			// Debug.Log(jsonString);
 			return JsonConvert.DeserializeObject<T>(jsonString);
 		}
 
 		public static byte[] ObjectSerialize2Bytes<T>(T data)
 		{
 			return String2Bytes(JsonConvert.SerializeObject(data));
+		}
+
+
+		// Helper method for response processing
+		public static Func<T, byte[]> CreateEncoderProcessor<T>()
+		{
+			if (typeof(T) == typeof(string))
+			{
+				return response => MsgUtils.String2Bytes((string)(object)response);
+			}
+			else if (typeof(T) == typeof(byte[]))
+			{
+				return response => (byte[])(object)response;
+			}
+			else
+			{
+				return response => MsgUtils.ObjectSerialize2Bytes(response);
+			}
+		}
+
+		// Helper method for request processing
+		public static Func<byte[], T> CreateDecoderProcessor<T>()
+		{
+			if (typeof(T) == typeof(string))
+			{
+				return bytes => (T)(object)MsgUtils.Bytes2String(bytes);
+			}
+			else if (typeof(T) == typeof(byte[]))
+			{
+				return bytes => (T)(object)bytes;
+			}
+			else
+			{
+				return bytes => MsgUtils.BytesDeserialize2Object<T>(bytes);
+			}
 		}
 
 		public static string CombineHeaderWithMessage(string header, string message)

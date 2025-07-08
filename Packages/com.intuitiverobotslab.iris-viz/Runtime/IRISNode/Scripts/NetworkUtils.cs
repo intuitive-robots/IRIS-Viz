@@ -31,7 +31,6 @@ namespace IRIS.Utilities
 	{
 		public string name;
 		public string nodeID;
-		public NodeAddress addr;
 		public string type;
 		public int servicePort;
 		public int topicPort;
