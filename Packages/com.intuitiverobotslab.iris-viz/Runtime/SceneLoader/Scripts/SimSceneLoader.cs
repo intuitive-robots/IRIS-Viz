@@ -84,7 +84,7 @@ namespace IRIS.SceneLoader
             GameObject newSimGameObject = new GameObject(simObject.name);
             if (!_simObjTransDict.ContainsKey(parentName))
             {
-                Debug.Log($"Parent found for {simObject.name}: {parentName}");
+                // Debug.Log($"Parent found for {simObject.name}: {parentName}");
                 newSimGameObject.transform.SetParent(transform, false);
             }
             else
@@ -93,7 +93,7 @@ namespace IRIS.SceneLoader
             }
             RegisterGameObject(simObject, newSimGameObject);
             ApplyTransform(newSimGameObject.transform, simObject.trans);
-            Debug.Log($"Created SimObject: {simObject.name}");
+            // Debug.Log($"Created SimObject: {simObject.name}");
         }
 
         public void CreateSimVisual(string objName, SimVisual simVisual, byte[] meshBytes, byte[] textureBytes)
@@ -192,11 +192,6 @@ namespace IRIS.SceneLoader
             {
                 BuildTexture(simMat.texture, mat, textureBytes);
             }
-            else
-            {
-                Debug.LogWarning($"No texture found for {visualObj.name}, using default material.");
-            }
-            // return mat;
         }
 
         public void BuildTexture(SimTexture simTex, Material mat, byte[] textureBytes)

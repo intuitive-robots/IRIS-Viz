@@ -174,7 +174,6 @@ namespace IRIS.Node
                     {
                         // Extract service name from first frame
                         string serviceName = MsgUtils.Bytes2String(messageReceived[0]);
-                        Debug.Log($"Received service {serviceName}");
                         if (serviceCallbacks.ContainsKey(serviceName))
                         {
                             // Run callback on background thread if it's CPU-intensive
