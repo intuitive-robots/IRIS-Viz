@@ -11,7 +11,9 @@
       "version": "file:com.intuitiverobotslab.iris-viz",
       "depth": 0,
       "source": "embedded",
-      "dependencies": {}
+      "dependencies": {
+        "com.unity.nuget.newtonsoft-json": "3.2.1"
+      }
     },
     "com.unity.ai.navigation": {
       "version": "2.0.5",

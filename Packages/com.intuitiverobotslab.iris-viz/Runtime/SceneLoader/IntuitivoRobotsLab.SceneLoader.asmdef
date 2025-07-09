@@ -1,8 +1,8 @@
 {
-    "name": "IntuitivoRobotsLab.SceneLoader",
+    "name": "IntuitivoRobotsLab.IRIS-Viz.SceneLoader",
     "rootNamespace": "",
     "references": [
-        "GUID:e9d8c992b0f44a52a977eb1a21c3fb95"
+        "IntuitivoRobotsLab.IRIS-Viz.IRISNode"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

@@ -1,3 +1,16 @@
 {
-	"name": "IntuitiveRobotsLab.IRIS-Viz"
+    "name": "IntuitivoRobotsLab.IRIS-Viz",
+    "references": [
+		"IntuitiveRobotsLab.IRIS-Viz.IRISNode",
+        "IntuitivoRobotsLab.IRIS-Viz.SceneLoader"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
 }

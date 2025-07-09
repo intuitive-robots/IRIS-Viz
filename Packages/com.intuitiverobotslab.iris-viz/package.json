@@ -1,9 +1,12 @@
 {
     "name": "com.intuitiverobotslab.iris-viz",
-    "version": "1.0.3",
+    "version": "1.0.5",
     "displayName": "IRIS-Viz",
     "description": "A Unity package for visualizing objects in simulation and real world",
     "unity": "6000.0",
+    "dependencies": {
+        "com.unity.nuget.newtonsoft-json": "3.2.1"
+    },
     "author": {
       "name": "Intuitive Robots Lab",
       "email": "xinkai.jiang@kit.edu",

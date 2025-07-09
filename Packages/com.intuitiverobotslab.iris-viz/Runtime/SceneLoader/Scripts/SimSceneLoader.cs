@@ -2,10 +2,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 using System.Runtime.InteropServices;
-using Newtonsoft.Json;
-using System.Threading.Tasks;
 using IRIS.Node;
-using IRIS.Utilities;
 
 namespace IRIS.SceneLoader
 {

@@ -11,9 +11,6 @@ namespace IRIS.SceneLoader
     {
         public Action OnSceneLoaded;
         public Action OnSceneCleared;
-        private object updateActionLock = new();
-        private Action updateAction;
-        private IRISXRNode _XRNode;
         // Services
         private Dictionary<string, INetComponent> serviceDict = new();
         private Dictionary<string, GameObject> _simSceneDict = new();
@@ -21,8 +18,6 @@ namespace IRIS.SceneLoader
 
         void Start()
         {
-            _XRNode = IRISXRNode.Instance;
-            updateAction = () => { };
             serviceDict["SpawnSimScene"] = new IRISService<SimScene, string>("SpawnSimScene", SpawnSimScene, true);
             serviceDict["CreateSimObject"] = new IRISService<string, string, SimObject, string>("CreateSimObject", CreateSimObject, true);
             serviceDict["CreateVisual"] = new IRISService<string, string, SimVisual, byte[], byte[], string>("CreateVisual", CreateSimVisual, true);

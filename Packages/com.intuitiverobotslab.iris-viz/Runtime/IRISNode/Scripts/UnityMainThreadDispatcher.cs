@@ -1,26 +1,30 @@
 using System;
 using System.Collections.Generic;
 
-public class UnityMainThreadDispatcher : Singleton<UnityMainThreadDispatcher>
+namespace IRIS.Node
 {
-    private readonly Queue<Action> _actions = new Queue<Action>();
-        
-    public void Enqueue(Action action)
+    public class UnityMainThreadDispatcher : Singleton<UnityMainThreadDispatcher>
     {
-        lock (_actions)
+        private readonly Queue<Action> _actions = new Queue<Action>();
+
+        public void Enqueue(Action action)
         {
-            _actions.Enqueue(action);
-        }
-    }
-    
-    void Update()
-    {
-        lock (_actions)
-        {
-            while (_actions.Count > 0)
+            lock (_actions)
             {
-                _actions.Dequeue().Invoke();
+                _actions.Enqueue(action);
+            }
+        }
+
+        void Update()
+        {
+            lock (_actions)
+            {
+                while (_actions.Count > 0)
+                {
+                    _actions.Dequeue().Invoke();
+                }
             }
         }
     }
+
 }

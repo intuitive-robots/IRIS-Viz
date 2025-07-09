@@ -44,7 +44,7 @@ Add the following to your `manifest.json` in your Unity project's `Packages` fol
 ```json
 {
   "dependencies": {
-    "com.intuitiverobotslab.iris-viz": "https://github.com/intuitiverobotslab/IRIS-Viz.git"
+    "com.intuitiverobotslab.iris-viz": "https://github.com/intuitive-robots/IRIS-Viz.git?path=Packages/com.intuitiverobotslab.iris-viz"
   }
 }
 ```
@@ -53,7 +53,7 @@ Add the following to your `manifest.json` in your Unity project's `Packages` fol
 1. Open the Package Manager in Unity (**Window > Package Manager**)
 2. Click the **+** button
 3. Select **Add package from git URL**
-4. Enter: `https://github.com/intuitiverobotslab/IRIS-Viz.git`
+4. Enter: `https://github.com/intuitive-robots/IRIS-Viz.git?path=Packages/com.intuitiverobotslab.iris-viz`
 
 
 ## Architecture

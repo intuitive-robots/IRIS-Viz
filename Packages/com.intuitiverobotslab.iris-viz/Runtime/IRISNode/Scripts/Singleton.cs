@@ -1,17 +1,22 @@
 using UnityEngine;
 
-public abstract class Singleton<T> : MonoBehaviour where T : MonoBehaviour
+namespace IRIS.Node
 {
-    public static T Instance { get; private set; }
-    
-    protected virtual void Awake()
+
+    public abstract class Singleton<T> : MonoBehaviour where T : MonoBehaviour
     {
-        if (Instance != null && Instance != this)
+        public static T Instance { get; private set; }
+
+        protected virtual void Awake()
         {
-            Destroy(gameObject);
-            return;
+            if (Instance != null && Instance != this)
+            {
+                Destroy(gameObject);
+                return;
+            }
+            Instance = this as T;
         }
-        Instance = this as T;
+
     }
-    
+
 }
