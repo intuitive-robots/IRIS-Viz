@@ -12,7 +12,6 @@ namespace IRIS.Node
 	public interface INetComponent
 	{
 		string Name { get; set; }
-		// bool IsActive { get; }
 
 	}
 
@@ -149,11 +148,10 @@ namespace IRIS.Node
 	{
 		public string Name { get; set; }
 
-		public IRISService(string serviceName, bool globalNameSpace = false)
+		public IRISService(string serviceName)
 		{
 			IRISXRNode netManager = IRISXRNode.Instance;
-			string hostName = netManager.localInfo.name;
-			Name = globalNameSpace ? serviceName : $"{hostName}/{serviceName}";
+			Name = serviceName;
 			if (netManager.localInfo.serviceList.Contains(Name))
 			{
 				throw new ArgumentException($"Service {Name} is already registered");
@@ -203,7 +201,7 @@ namespace IRIS.Node
 		public Func<ResponseType, byte[]> ProcessResponseFunc;
 
 		public IRISService(string serviceName, Func<RequestType, ResponseType> onRequest, bool globalNameSpace = false)
-			: base(serviceName, globalNameSpace) // Call base constructor with parameters
+			: base(serviceName) // Call base constructor with parameters
 		{
 			_onRequest = onRequest ?? throw new ArgumentNullException(nameof(onRequest));
 
@@ -238,7 +236,7 @@ namespace IRIS.Node
 		public Func<ResponseType, byte[]> ProcessResponseFunc;
 
 		public IRISService(string serviceName, Func<RequestType1, RequestType2, ResponseType> onRequest, bool globalNameSpace = false)
-			: base(serviceName, globalNameSpace)
+			: base(serviceName)
 		{
 			_onRequest = onRequest ?? throw new ArgumentNullException(nameof(onRequest));
 
@@ -281,7 +279,7 @@ namespace IRIS.Node
 		public Func<ResponseType, byte[]> ProcessResponseFunc;
 
 		public IRISService(string serviceName, Func<RequestType1, RequestType2, RequestType3, ResponseType> onRequest, bool globalNameSpace = false)
-			: base(serviceName, globalNameSpace)
+			: base(serviceName)
 		{
 			_onRequest = onRequest ?? throw new ArgumentNullException(nameof(onRequest));
 
@@ -326,7 +324,7 @@ namespace IRIS.Node
 		public Func<ResponseType, byte[]> ProcessResponseFunc;
 
 		public IRISService(string serviceName, Func<RequestType1, RequestType2, RequestType3, RequestType4, ResponseType> onRequest, bool globalNameSpace = false)
-			: base(serviceName, globalNameSpace)
+			: base(serviceName)
 		{
 			_onRequest = onRequest ?? throw new ArgumentNullException(nameof(onRequest));
 
@@ -374,7 +372,7 @@ namespace IRIS.Node
 		public Func<ResponseType, byte[]> ProcessResponseFunc;
 
 		public IRISService(string serviceName, Func<RequestType1, RequestType2, RequestType3, RequestType4, RequestType5, ResponseType> onRequest, bool globalNameSpace = false)
-			: base(serviceName, globalNameSpace)
+			: base(serviceName)
 		{
 			_onRequest = onRequest ?? throw new ArgumentNullException(nameof(onRequest));
 			

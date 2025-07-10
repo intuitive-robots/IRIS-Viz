@@ -30,9 +30,7 @@ namespace IRIS.Node
         private CancellationTokenSource cancellationTokenSource;
         private Task multicastTask;
         private Task serviceTask;
-        private string multicastMessage;
         public Action SubscriptionSpin;
-        private NetMQRuntime runtime;
         private ResponseSocket _resSocket;
         public Dictionary<string, Func<byte[][], byte[][]>> serviceCallbacks;
         public PublisherSocket _pubSocket;
@@ -134,8 +132,9 @@ namespace IRIS.Node
             string portString = endpoint.Split(':')[2];
             localInfo.servicePort = portString != null ? int.Parse(portString) : 0;
 
-            serviceDict["Rename"] = new IRISService<string, string>("Rename", Rename, true);
             serviceDict["GetNodeInfo"] = new IRISService<string, NodeInfo>("GetNodeInfo", (req) => localInfo, true);
+            serviceDict["Rename"] = new IRISService<string, string>("Rename", Rename, true);
+            serviceDict["GetServiceList"] = new IRISService<string, List<string>>("GetServiceList", GetServiceList, true);
         }
 
 
@@ -274,6 +273,11 @@ namespace IRIS.Node
             Debug.Log($"Change Host Name to {localInfo.name}");
             PlayerPrefs.Save();
             return IRISSignal.SUCCESS;
+        }
+
+        public List<string> GetServiceList(string req)
+        {
+            return serviceDict.Keys.ToList();
         }
 
     }

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using System.Runtime.InteropServices;
 using IRIS.Node;
+using IRIS.Utilities;
 
 namespace IRIS.SceneLoader
 {
@@ -11,40 +12,21 @@ namespace IRIS.SceneLoader
     {
         [SerializeField] private Material defaultMaterial;
         [SerializeField] private GameObject sceneAxis;
-        private object updateActionLock = new();
-        private Action updateAction;
         public Action OnSceneLoaded;
         public Action OnSceneCleared;
-        private IRISXRNode _XRNode;
-        private GameObject _simSceneObj;
-        private SimScene _simScene;
+        // private GameObject _simSceneObj;
+        // private SimScene _simScene;
         private Dictionary<string, GameObject> _simObjectDict = new();
         private Dictionary<string, Transform> _simObjTransDict = new();
+        private List<INetComponent> _serviceList = new();
 
         void Start()
         {
-            _XRNode = IRISXRNode.Instance;
-            updateAction = () => { };
             sceneAxis.SetActive(false);
             sceneAxis.name = $"{name}_SceneAxis_IRIS";
-            // OnSceneLoaded += () => Debug.Log("Scene Loaded");
-        }
-
-        void RunOnMainThread(Action action)
-        {
-            lock (updateActionLock)
-            {
-                updateAction += action;
-            }
-        }
-
-        void Update()
-        {
-            lock (updateActionLock)
-            {
-                updateAction.Invoke();
-                updateAction = () => { };
-            }
+            _serviceList.Add(new IRISService<string, SimObject, string>($"{gameObject.name}/CreateSimObject", CreateSimObjectCb));
+            _serviceList.Add(new IRISService<string, SimVisual, byte[], byte[], string>($"{gameObject.name}/CreateVisual", CreateSimVisualCb));
+            _serviceList.Add(new IRISService<string, string>($"{gameObject.name}/SubscribeRigidObjectsController", SubscribeRigidObjectsControllerCb));
         }
 
         static void ApplyTransform(Transform uTransform, IRISTransform simTrans)
@@ -70,6 +52,11 @@ namespace IRIS.SceneLoader
             _simObjTransDict.Add(simObject.name, simGameObject.transform);
         }
 
+        private string CreateSimObjectCb(string parentName, SimObject simObject)
+        {
+            CreateSimObject(parentName, simObject);
+            return IRISSignal.SUCCESS;
+        }
 
         public void CreateSimObject(string parentName, SimObject simObject)
         {
@@ -90,8 +77,15 @@ namespace IRIS.SceneLoader
             }
             RegisterGameObject(simObject, newSimGameObject);
             ApplyTransform(newSimGameObject.transform, simObject.trans);
-            // Debug.Log($"Created SimObject: {simObject.name}");
+            Debug.Log($"Created SimObject: {simObject.name}");
         }
+
+        private string CreateSimVisualCb(string objName, SimVisual simVisual, byte[] meshBytes, byte[] textureBytes)
+        {
+            CreateSimVisual(objName, simVisual, meshBytes, textureBytes);
+            return IRISSignal.SUCCESS;
+        }
+
 
         public void CreateSimVisual(string objName, SimVisual simVisual, byte[] meshBytes, byte[] textureBytes)
         {
@@ -126,15 +120,12 @@ namespace IRIS.SceneLoader
                         return;
                     }
                     BuildMesh(simVisual.mesh, visualObj, meshBytes);
-                    // visualObj = GameObject.CreatePrimitive(PrimitiveType.Sphere);
                     break;
                 default:
                     Debug.LogWarning($"Unknown SimVisual type {simVisual.type}, creating an empty GameObject.");
                     return;
             }
             BuildMaterial(simVisual.material, visualObj, textureBytes);
-            // Renderer renderer = visualObj.GetComponent<Renderer>();
-            // Debug.LogWarning($"Parent not found for {simVisual.objName}, setting to root.");
             visualObj.transform.SetParent(_simObjTransDict[objName], false);
             ApplyTransform(visualObj.transform, simVisual.trans);
         }
@@ -200,30 +191,23 @@ namespace IRIS.SceneLoader
             mat.mainTextureScale = new Vector2(simTex.textureScale[0], simTex.textureScale[1]);
         }
 
+        private string SubscribeRigidObjectsControllerCb(string url)
+        {
+            
+            RigidObjectsController rigidObjectsController = GetComponent<RigidObjectsController>();
+            rigidObjectsController.StartSubscription(url);
+            return IRISSignal.SUCCESS;
+        }
+
 
         public static T[] DecodeArray<T>(byte[] data, int start, int length) where T : struct
         {
             return MemoryMarshal.Cast<byte, T>(new ReadOnlySpan<byte>(data, start, length)).ToArray();
         }
 
-        void ClearScene()
-        {
-            OnSceneCleared?.Invoke();
-            if (_simSceneObj != null) Destroy(_simSceneObj);
-            _simObjectDict.Clear();
-            _simObjTransDict.Clear();
-            Debug.Log("Scene Cleared");
-        }
-
-
         public Dictionary<string, Transform> GetObjectsTrans()
         {
             return _simObjTransDict;
-        }
-
-        public GameObject GetSimObject()
-        {
-            return _simSceneObj;
         }
 
     }
