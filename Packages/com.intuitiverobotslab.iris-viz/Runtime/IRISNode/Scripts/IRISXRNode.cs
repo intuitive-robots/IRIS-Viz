@@ -84,12 +84,12 @@ namespace IRIS.Node
             cancellationTokenSource = new CancellationTokenSource();
             // Start the sending task
 
+            serviceTask = StartServiceTask(cancellationTokenSource.Token);
             foreach (IPAddress ipAddress in NetworkUtils.GetAllNetworkInterfaces(true, true))
             {
                 // Start the multicast sending task for each interface
                 multicastTasksList.Add(StartMulticastTask(ipAddress, cancellationTokenSource.Token));
             }
-            serviceTask = StartServiceTask(cancellationTokenSource.Token);
         }
 
         void Update()
