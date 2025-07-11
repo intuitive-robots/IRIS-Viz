@@ -13,6 +13,8 @@ namespace IRIS.Node
 	{
 		string Name { get; set; }
 
+		void Unregister();
+
 	}
 
 	public class Publisher<MsgType>

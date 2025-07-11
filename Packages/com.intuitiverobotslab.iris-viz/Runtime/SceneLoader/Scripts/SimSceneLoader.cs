@@ -12,10 +12,6 @@ namespace IRIS.SceneLoader
     {
         [SerializeField] private Material defaultMaterial;
         [SerializeField] private GameObject sceneAxis;
-        public Action OnSceneLoaded;
-        public Action OnSceneCleared;
-        // private GameObject _simSceneObj;
-        // private SimScene _simScene;
         private Dictionary<string, GameObject> _simObjectDict = new();
         private Dictionary<string, Transform> _simObjTransDict = new();
         private List<INetComponent> _serviceList = new();
@@ -193,7 +189,7 @@ namespace IRIS.SceneLoader
 
         private string SubscribeRigidObjectsControllerCb(string url)
         {
-            
+
             RigidObjectsController rigidObjectsController = GetComponent<RigidObjectsController>();
             rigidObjectsController.StartSubscription(url);
             return IRISSignal.SUCCESS;
@@ -209,6 +205,17 @@ namespace IRIS.SceneLoader
         {
             return _simObjTransDict;
         }
+
+        private void OnDestroy() {
+            foreach (var service in _serviceList)
+            {
+                service.Unregister();
+            }
+            _serviceList.Clear();
+            _simObjectDict.Clear();
+            _simObjTransDict.Clear();
+        }
+
 
     }
 }

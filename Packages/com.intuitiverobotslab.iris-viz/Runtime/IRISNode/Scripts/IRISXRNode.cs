@@ -126,8 +126,8 @@ namespace IRIS.Node
                 Debug.Log($"UDP client initialized successfully for interface {ipAddress}");
                 while (!cancellationToken.IsCancellationRequested)
                 {
-
-                    SendMulticastMessage(client, remoteEndPoint, $"{localInfo.nodeID}{localInfo.servicePort}");
+                    byte[] msgBytes = MsgUtils.String2Bytes($"{localInfo.nodeID}{localInfo.servicePort}");
+                    client.Send(msgBytes, msgBytes.Length, remoteEndPoint);
                     // Wait for the specified interval or until cancellation is requested
                     await Task.Delay(TimeSpan.FromSeconds(messageSendInterval), cancellationToken);
                 }
@@ -152,20 +152,6 @@ namespace IRIS.Node
                 {
                     Debug.LogError($"Error closing UDP client for {ipAddress}: {ex.Message}");
                 }
-            }
-        }
-
-
-        void SendMulticastMessage(UdpClient udpClient, IPEndPoint remoteEndPoint, string message)
-        {
-            try
-            {
-                byte[] data = MsgUtils.String2Bytes(message);
-                udpClient.Send(data, data.Length, remoteEndPoint);
-            }
-            catch (Exception e)
-            {
-                Debug.LogError("Error sending multicast message: " + e.Message);
             }
         }
 
@@ -217,8 +203,6 @@ namespace IRIS.Node
                 }
             }
         }
-
-
 
 
         void OnDestroy()
