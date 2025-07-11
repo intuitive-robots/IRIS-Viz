@@ -24,11 +24,8 @@ namespace IRIS.Node
         public string multicastAddress = "239.255.10.10";
         public int port = 7720;
         public float messageSendInterval = 1.0f; // Send a message every second
-
-        private UdpClient udpClient;
-        private IPEndPoint remoteEndPoint;
         private CancellationTokenSource cancellationTokenSource;
-        private Task multicastTask;
+        private List<Task> multicastTasksList = new List<Task>();
         private Task serviceTask;
         public Action SubscriptionSpin;
         private ResponseSocket _resSocket;
@@ -86,42 +83,18 @@ namespace IRIS.Node
             // Initialize cancellation token
             cancellationTokenSource = new CancellationTokenSource();
             // Start the sending task
-            InitializeUdpClient();
-            multicastTask = StartMulticastTask(cancellationTokenSource.Token);
+
+            foreach (IPAddress ipAddress in NetworkUtils.GetAllNetworkInterfaces(true, true))
+            {
+                // Start the multicast sending task for each interface
+                multicastTasksList.Add(StartMulticastTask(ipAddress, cancellationTokenSource.Token));
+            }
             serviceTask = StartServiceTask(cancellationTokenSource.Token);
         }
 
         void Update()
         {
             SubscriptionSpin?.Invoke();
-        }
-
-        private void InitializeUdpClient()
-        {
-            try
-            {
-                // Clean up existing client if it exists
-                if (udpClient != null)
-                {
-                    udpClient.Close();
-                    udpClient = null;
-                }
-
-                // Create UDP client using default interface
-                udpClient = new UdpClient();
-
-                // Configure for multicast
-                remoteEndPoint = new IPEndPoint(IPAddress.Parse(multicastAddress), port);
-
-                // Set TTL for multicast
-                udpClient.Client.SetSocketOption(SocketOptionLevel.IP, SocketOptionName.MulticastTimeToLive, 1);
-
-                Debug.Log("UDP client initialized successfully using default interface");
-            }
-            catch (Exception e)
-            {
-                Debug.LogError($"Error initializing UDP client: {e.Message}");
-            }
         }
 
         private void InitializeService()
@@ -138,28 +111,64 @@ namespace IRIS.Node
         }
 
 
-        private async Task StartMulticastTask(CancellationToken cancellationToken)
+        private async Task StartMulticastTask(IPAddress ipAddress, CancellationToken cancellationToken)
         {
-            Debug.Log("Multicast sender initialized with threading");
+            UdpClient client = null;
             try
             {
+                // Create UDP client bound to specific interface
+                client = new UdpClient(new IPEndPoint(ipAddress, 0));
+                // Configure multicast options
+                client.Client.SetSocketOption(SocketOptionLevel.IP, SocketOptionName.MulticastTimeToLive, 32);
+                client.Client.SetSocketOption(SocketOptionLevel.IP, SocketOptionName.MulticastInterface, ipAddress.GetAddressBytes());
+                // Configure for multicast
+                IPEndPoint remoteEndPoint = new IPEndPoint(IPAddress.Parse(multicastAddress), port);
+                Debug.Log($"UDP client initialized successfully for interface {ipAddress}");
                 while (!cancellationToken.IsCancellationRequested)
                 {
-                    SendMulticastMessage($"{localInfo.nodeID}{localInfo.servicePort}");
 
+                    SendMulticastMessage(client, remoteEndPoint, $"{localInfo.nodeID}{localInfo.servicePort}");
                     // Wait for the specified interval or until cancellation is requested
                     await Task.Delay(TimeSpan.FromSeconds(messageSendInterval), cancellationToken);
                 }
             }
             catch (OperationCanceledException)
             {
-                Debug.Log("Multicast sending task was cancelled");
+                Debug.Log($"Multicast sending task was cancelled for {ipAddress}");
             }
             catch (Exception e)
             {
-                Debug.LogError("Error in sending task: " + e.Message);
+                Debug.LogError($"Error in sending task for {ipAddress}: {e.Message}");
+            }
+            finally
+            {
+                // Clean up the client
+                try
+                {
+                    client?.Close();
+                    Debug.Log($"UDP client closed for {ipAddress}");
+                }
+                catch (Exception ex)
+                {
+                    Debug.LogError($"Error closing UDP client for {ipAddress}: {ex.Message}");
+                }
             }
         }
+
+
+        void SendMulticastMessage(UdpClient udpClient, IPEndPoint remoteEndPoint, string message)
+        {
+            try
+            {
+                byte[] data = MsgUtils.String2Bytes(message);
+                udpClient.Send(data, data.Length, remoteEndPoint);
+            }
+            catch (Exception e)
+            {
+                Debug.LogError("Error sending multicast message: " + e.Message);
+            }
+        }
+
 
         private async Task StartServiceTask(CancellationToken cancellationToken)
         {
@@ -210,28 +219,6 @@ namespace IRIS.Node
         }
 
 
-        void SendMulticastMessage(string message)
-        {
-            try
-            {
-                // Check if UDP client and endpoint are initialized
-                if (udpClient == null || remoteEndPoint == null)
-                {
-                    Debug.LogWarning("UDP client or remote endpoint is null. Reinitializing...");
-                    InitializeUdpClient();
-                    return;
-                }
-
-                byte[] data = Encoding.UTF8.GetBytes(message);
-                udpClient.Send(data, data.Length, remoteEndPoint);
-                // Debug.Log("Sent: " + message);
-            }
-            catch (Exception e)
-            {
-                Debug.LogError("Error sending multicast message: " + e.Message);
-            }
-        }
-
 
 
         void OnDestroy()
@@ -243,25 +230,38 @@ namespace IRIS.Node
             }
 
             // Wait for task completion (with timeout)
-            if (multicastTask != null)
+            Task.WhenAll(multicastTasksList).ContinueWith(t =>
+            {
+                if (t.IsFaulted)
+                {
+                    Debug.LogError("Error in multicast tasks: " + t.Exception?.Message);
+                }
+            });
+            // Wait for service task completion
+            if (serviceTask != null)
             {
                 try
                 {
-                    multicastTask.Wait(TimeSpan.FromSeconds(1));
+                    serviceTask.Wait(TimeSpan.FromSeconds(0.5));
                 }
-                catch (AggregateException)
+                catch (Exception e)
                 {
-                    // Task was cancelled, which is expected
+                    Debug.LogError("Error waiting for service task completion: " + e.Message);
                 }
             }
-
-            // Clean up resources
-            if (udpClient != null)
+            // Clean up sockets
+            foreach (var socket in _sockets)
             {
-                udpClient.Close();
+                try
+                {
+                    socket?.Close();
+                    Debug.Log($"Socket {socket.GetType().Name} closed successfully.");
+                }
+                catch (Exception e)
+                {
+                    Debug.LogError($"Error closing socket {socket.GetType().Name}: {e.Message}");
+                }
             }
-
-            cancellationTokenSource?.Dispose();
         }
 
 

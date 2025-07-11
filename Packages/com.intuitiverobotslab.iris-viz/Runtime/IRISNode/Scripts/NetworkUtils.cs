@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;
 using System.Net.NetworkInformation;
-
+using UnityEngine;
 
 namespace IRIS.Utilities
 {
@@ -93,6 +93,71 @@ namespace IRIS.Utilities
 			}
 			return null;
 		}
+
+		public struct InterfaceInfo
+		{
+			public string Name;
+			public IPAddress IPAddress;
+			public string Description;
+			public NetworkInterfaceType InterfaceType;
+			public OperationalStatus Status;
+
+			public override string ToString()
+			{
+				return $"{Name} ({IPAddress}) - {InterfaceType} [{Status}]";
+			}
+		}
+
+		public static List<IPAddress> GetAllNetworkInterfaces(bool includeLoopback = false, bool includeInactive = false)
+		{
+			List<IPAddress> interfaceList = new List<IPAddress>();
+
+			try
+			{
+				NetworkInterface[] interfaces = NetworkInterface.GetAllNetworkInterfaces();
+
+				foreach (NetworkInterface networkInterface in interfaces)
+				{
+					// Skip based on operational status
+					if (!includeInactive && networkInterface.OperationalStatus != OperationalStatus.Up)
+					{
+						continue;
+					}
+
+					// Skip based on interface type
+					if (!includeLoopback && networkInterface.NetworkInterfaceType == NetworkInterfaceType.Loopback)
+					{
+						continue;
+					}
+
+					// Skip tunnel interfaces
+					if (networkInterface.NetworkInterfaceType == NetworkInterfaceType.Tunnel)
+					{
+						continue;
+					}
+
+					// Get IP properties
+					IPInterfaceProperties ipProperties = networkInterface.GetIPProperties();
+
+					foreach (UnicastIPAddressInformation unicastInfo in ipProperties.UnicastAddresses)
+					{
+						// Only include IPv4 addresses and skip link-local addresses
+						if (unicastInfo.Address.AddressFamily == AddressFamily.InterNetwork &&
+							!unicastInfo.Address.ToString().StartsWith("169.254")) // Skip APIPA addresses
+						{
+							interfaceList.Add(unicastInfo.Address);
+						}
+					}
+				}
+			}
+			catch (Exception e)
+			{
+				Debug.LogError($"Error getting network interfaces: {e.Message}");
+			}
+
+			return interfaceList;
+		}
+
 
 		private static bool IsInSameSubnet(IPAddress ip1, IPAddress ip2, IPAddress subnetMask)
 		{
