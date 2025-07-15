@@ -39,7 +39,8 @@ namespace IRIS.Node
             // NOTE: This is not necessary use DontDestroyOnLoad
             // DontDestroyOnLoad(gameObject);
             // Force to use .NET implementation of NetMQ
-            // AsyncIO.ForceDotNet.Force();
+            // It may not be necessary on Linux, but Windows requires it
+            AsyncIO.ForceDotNet.Force();
             // Initialize local node info
             localInfo = new NodeInfo
             {
@@ -294,7 +295,8 @@ namespace IRIS.Node
                     Debug.LogError($"Error closing socket {socket.GetType().Name}: {e.Message}");
                 }
             }
-            // Clean up service callbacks
+            // Clean up service callbacks.
+            // Windows require this, otherwise it will block when quitting
             NetMQConfig.Cleanup();
             Debug.Log("IRISXRNode destroyed and resources cleaned up.");
         }
