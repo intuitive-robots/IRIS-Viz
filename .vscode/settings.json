@@ -59,5 +59,8 @@
     "dotnet.defaultSolution": "IRIS-Viz.sln",
     "cSpell.words": [
         "IRISXR"
-    ]
+    ],
+    "[csharp]": {
+        "editor.defaultFormatter": "ms-dotnettools.csharp"
+    },
 }

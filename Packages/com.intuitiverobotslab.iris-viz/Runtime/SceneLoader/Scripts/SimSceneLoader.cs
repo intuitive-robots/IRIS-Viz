@@ -206,7 +206,8 @@ namespace IRIS.SceneLoader
             return _simObjTransDict;
         }
 
-        private void OnDestroy() {
+        private void OnDestroy()
+        {
             foreach (var service in _serviceList)
             {
                 service.Unregister();

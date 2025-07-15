@@ -6,15 +6,15 @@ namespace IRIS.Node
     public class LogStreamer : MonoBehaviour
     {
 
-		protected string _topic;
-		protected Publisher<string> _publisher;
+        protected string _topic;
+        protected Publisher<string> _publisher;
 
-		void Start()
-		{
-			_publisher = new Publisher<string>("Log");
+        void Start()
+        {
+            _publisher = new Publisher<string>("Log");
             Application.logMessageReceived += HandleLog;
             timer = Time.realtimeSinceStartup;
-		}
+        }
 
         private int frameCounter = 0;
         private float timer = 0;
@@ -24,7 +24,8 @@ namespace IRIS.Node
             _publisher.Publish(logString);
         }
 
-        private void OnApplicationQuit() {
+        private void OnApplicationQuit()
+        {
             Application.logMessageReceived -= HandleLog;
         }
 

@@ -108,7 +108,7 @@ namespace IRIS.Utilities
 			}
 		}
 
-		public static List<IPAddress> GetAllNetworkInterfaces(bool includeLoopback = false, bool includeInactive = false)
+		public static List<IPAddress> GetNetworkInterfaces(bool includeLoopback = false, bool includeInactive = false)
 		{
 			List<IPAddress> interfaceList = new List<IPAddress>();
 
@@ -143,7 +143,8 @@ namespace IRIS.Utilities
 					{
 						// Only include IPv4 addresses and skip link-local addresses
 						if (unicastInfo.Address.AddressFamily == AddressFamily.InterNetwork &&
-							!unicastInfo.Address.ToString().StartsWith("169.254")) // Skip APIPA addresses
+							!unicastInfo.Address.ToString().StartsWith("169.254") &&
+							!unicastInfo.Address.ToString().StartsWith("127.0.0.1")) // Skip APIPA addresses
 						{
 							interfaceList.Add(unicastInfo.Address);
 						}

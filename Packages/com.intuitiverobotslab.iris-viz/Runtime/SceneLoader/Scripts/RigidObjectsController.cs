@@ -7,7 +7,7 @@ namespace IRIS.SceneLoader
 {
 
     [Serializable]
-    public class StreamMessage : Dictionary<string, List<float>> {}
+    public class StreamMessage : Dictionary<string, List<float>> { }
 
     [RequireComponent(typeof(SimSceneLoader))]
     public class RigidObjectsController : MonoBehaviour
