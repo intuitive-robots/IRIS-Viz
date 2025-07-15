@@ -11,7 +11,7 @@ namespace IRIS.Node
 
 		void Start()
 		{
-			_publisher = new Publisher<string>("Log", false);
+			_publisher = new Publisher<string>("Log");
             Application.logMessageReceived += HandleLog;
             timer = Time.realtimeSinceStartup;
 		}

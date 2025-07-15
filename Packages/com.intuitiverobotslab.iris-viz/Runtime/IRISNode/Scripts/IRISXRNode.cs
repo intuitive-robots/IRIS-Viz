@@ -2,7 +2,6 @@ using UnityEngine;
 using System;
 using System.Net;
 using System.Net.Sockets;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Collections.Generic;
@@ -32,7 +31,7 @@ namespace IRIS.Node
         public Dictionary<string, Func<byte[][], byte[][]>> serviceCallbacks;
         public PublisherSocket _pubSocket;
         public List<string> serviceList;
-        private List<NetMQSocket> _sockets;
+        public List<NetMQSocket> _sockets;
         private Dictionary<string, INetComponent> serviceDict;
 
         void Start()
@@ -40,9 +39,7 @@ namespace IRIS.Node
             // NOTE: This is not necessary use DontDestroyOnLoad
             // DontDestroyOnLoad(gameObject);
             // Force to use .NET implementation of NetMQ
-            AsyncIO.ForceDotNet.Force();
-            // runtime = new NetMQRuntime();
-            // runtime.Run();
+            // AsyncIO.ForceDotNet.Force();
             // Initialize local node info
             localInfo = new NodeInfo
             {
@@ -84,16 +81,17 @@ namespace IRIS.Node
             cancellationTokenSource = new CancellationTokenSource();
             // Start the sending task
 
-            serviceTask = StartServiceTask(cancellationTokenSource.Token);
+            // serviceTask = StartServiceTask(cancellationTokenSource.Token);
             foreach (IPAddress ipAddress in NetworkUtils.GetAllNetworkInterfaces(true, true))
             {
                 // Start the multicast sending task for each interface
-                multicastTasksList.Add(StartMulticastTask(ipAddress, cancellationTokenSource.Token));
+                multicastTasksList.Add(StartMulticastAsync(ipAddress, cancellationTokenSource.Token));
             }
         }
 
         void Update()
         {
+            ServiceRespondSpin();
             SubscriptionSpin?.Invoke();
         }
 
@@ -105,13 +103,13 @@ namespace IRIS.Node
             string portString = endpoint.Split(':')[2];
             localInfo.servicePort = portString != null ? int.Parse(portString) : 0;
 
-            serviceDict["GetNodeInfo"] = new IRISService<string, NodeInfo>("GetNodeInfo", (req) => localInfo, true);
-            serviceDict["Rename"] = new IRISService<string, string>("Rename", Rename, true);
-            serviceDict["GetServiceList"] = new IRISService<string, List<string>>("GetServiceList", GetServiceList, true);
+            serviceDict["GetNodeInfo"] = new IRISService<string, NodeInfo>("GetNodeInfo", (req) => localInfo);
+            serviceDict["Rename"] = new IRISService<string, string>("Rename", Rename);
+            serviceDict["GetServiceList"] = new IRISService<string, List<string>>("GetServiceList", GetServiceList);
         }
 
 
-        private async Task StartMulticastTask(IPAddress ipAddress, CancellationToken cancellationToken)
+        private async Task StartMulticastAsync(IPAddress ipAddress, CancellationToken cancellationToken)
         {
             UdpClient client = null;
             try
@@ -155,54 +153,104 @@ namespace IRIS.Node
             }
         }
 
-
-        private async Task StartServiceTask(CancellationToken cancellationToken)
-        {
-            while (!cancellationToken.IsCancellationRequested)
+		public void ServiceRespondSpin()
+		{
+			if (!_resSocket.HasIn) return;
+            // now we need to carefully handle the service request
+            // make sure that it would not block the main thread
+            try
             {
-                try
+                // Use timeout to allow cancellation checks
+                List<byte[]> messageReceived = _resSocket.ReceiveMultipartBytes();
+                if (messageReceived.Count > 1)
                 {
-                    // Use timeout to allow cancellation checks
-                    List<byte[]> messageReceived = await Task.Run(() => _resSocket.ReceiveMultipartBytes(), cancellationToken);
-                    if (messageReceived.Count > 1)
+                    // Extract service name from first frame
+                    string serviceName = MsgUtils.Bytes2String(messageReceived[0]);
+                    if (serviceCallbacks.ContainsKey(serviceName))
                     {
-                        // Extract service name from first frame
-                        string serviceName = MsgUtils.Bytes2String(messageReceived[0]);
-                        if (serviceCallbacks.ContainsKey(serviceName))
-                        {
-                            // Run callback on background thread if it's CPU-intensive
-                            byte[][] response = serviceCallbacks[serviceName](messageReceived.Skip(1).ToArray());
-                            _resSocket.SendMultipartBytes(response);
-                        }
-                        else
-                        {
-                            Debug.LogWarning($"Service {serviceName} not found");
-                            _resSocket.SendFrame(IRISSignal.NOSERVICE);
-                        }
+                        // Run callback on background thread if it's CPU-intensive
+                        byte[][] response = serviceCallbacks[serviceName](messageReceived.Skip(1).ToArray());
+                        _resSocket.SendMultipartBytes(response);
                     }
                     else
                     {
-                        Debug.LogWarning("Received message does not contain service name or request data");
-                        _resSocket.SendFrame(IRISSignal.ERROR);
+                        Debug.LogWarning($"Service {serviceName} not found");
+                        _resSocket.SendFrame(IRISSignal.NOSERVICE);
                     }
                 }
-                catch (TimeoutException)
+                else
                 {
-                    // Timeout is expected - allows cancellation token to be checked
-                    continue;
-                }
-                catch (OperationCanceledException)
-                {
-                    Debug.Log("Service task was cancelled");
-                    return; // Exit the loop if cancellation is requested
-                }
-                catch (Exception e)
-                {
-                    Debug.LogError("Error receiving service request: " + e.Message);
+                    Debug.LogWarning("Received message does not contain service name or request data");
                     _resSocket.SendFrame(IRISSignal.ERROR);
                 }
             }
-        }
+            catch (TimeoutException)
+            {
+                // TODO: Make sure that the timeout is not too long
+                // Timeout is expected - allows cancellation token to be checked
+                Debug.Log("Timeout while waiting for service request, continuing...");
+            }
+            catch (OperationCanceledException)
+            {
+                Debug.Log("Service task was cancelled");
+                return; // Exit the loop if cancellation is requested
+            }
+            catch (Exception e)
+            {
+                Debug.LogError("Error receiving service request: " + e.Message);
+                _resSocket.SendFrame(IRISSignal.ERROR);
+            }
+		}
+
+
+
+        // private async Task StartServiceTask(CancellationToken cancellationToken)
+        // {
+        //     while (!cancellationToken.IsCancellationRequested)
+        //     {
+        //         try
+        //         {
+        //             // Use timeout to allow cancellation checks
+        //             List<byte[]> messageReceived = await Task.Run(() => _resSocket.ReceiveMultipartBytes(), cancellationToken);
+        //             if (messageReceived.Count > 1)
+        //             {
+        //                 // Extract service name from first frame
+        //                 string serviceName = MsgUtils.Bytes2String(messageReceived[0]);
+        //                 if (serviceCallbacks.ContainsKey(serviceName))
+        //                 {
+        //                     // Run callback on background thread if it's CPU-intensive
+        //                     byte[][] response = serviceCallbacks[serviceName](messageReceived.Skip(1).ToArray());
+        //                     _resSocket.SendMultipartBytes(response);
+        //                 }
+        //                 else
+        //                 {
+        //                     Debug.LogWarning($"Service {serviceName} not found");
+        //                     _resSocket.SendFrame(IRISSignal.NOSERVICE);
+        //                 }
+        //             }
+        //             else
+        //             {
+        //                 Debug.LogWarning("Received message does not contain service name or request data");
+        //                 _resSocket.SendFrame(IRISSignal.ERROR);
+        //             }
+        //         }
+        //         catch (TimeoutException)
+        //         {
+        //             // Timeout is expected - allows cancellation token to be checked
+        //             continue;
+        //         }
+        //         catch (OperationCanceledException)
+        //         {
+        //             Debug.Log("Service task was cancelled");
+        //             return; // Exit the loop if cancellation is requested
+        //         }
+        //         catch (Exception e)
+        //         {
+        //             Debug.LogError("Error receiving service request: " + e.Message);
+        //             _resSocket.SendFrame(IRISSignal.ERROR);
+        //         }
+        //     }
+        // }
 
 
         void OnDestroy()
@@ -246,6 +294,9 @@ namespace IRIS.Node
                     Debug.LogError($"Error closing socket {socket.GetType().Name}: {e.Message}");
                 }
             }
+            // Clean up service callbacks
+            NetMQConfig.Cleanup();
+            Debug.Log("IRISXRNode destroyed and resources cleaned up.");
         }
 
 
