@@ -45,6 +45,8 @@ namespace IRIS.SceneLoader
 	public class SimObject : SimAsset
 	{
 		public IRISTransform trans;
+		public List<SimVisual> visuals;
+		public List<SimObject> children;
 	}
 
 	public class SimScene : SimAsset

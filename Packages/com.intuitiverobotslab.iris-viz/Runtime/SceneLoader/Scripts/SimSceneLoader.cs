@@ -73,6 +73,23 @@ namespace IRIS.SceneLoader
             }
             RegisterGameObject(simObject, newSimGameObject);
             ApplyTransform(newSimGameObject.transform, simObject.trans);
+            if (simObject.visuals != null)
+            {
+                foreach (var visual in simObject.visuals)
+                {
+                    // Skip creating visuals with mesh or material
+                    if (visual.mesh != null) continue;
+                    if (visual.material != null && visual.material.texture != null) continue;
+                    CreateSimVisual(newSimGameObject.name, visual, null, null);
+                }
+            }
+            if (simObject.children != null)
+            {
+                foreach (var child in simObject.children)
+                {
+                    CreateSimObject(newSimGameObject.name, child);
+                }
+            }
             Debug.Log($"Created SimObject: {simObject.name}");
         }
 

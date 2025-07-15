@@ -218,7 +218,7 @@ namespace IRIS.Node
 			}
 			catch (Exception ex)
 			{
-				Debug.LogWarning($"Error processing request for service {Name}: {ex.Message}");
+				Debug.LogWarning($"Error processing request for service {Name}: {ex.Message}\n{ex.StackTrace}");
 				return new byte[][] { HandleErrorResponse(ex) };
 			}
 		}
@@ -261,7 +261,7 @@ namespace IRIS.Node
 			}
 			catch (Exception ex)
 			{
-				Debug.LogWarning($"Error processing request for service {Name}: {ex.Message}");
+				Debug.LogWarning($"Error processing request for service {Name}: {ex.Message}\n{ex.StackTrace}");
 				return new byte[][] { HandleErrorResponse(ex) };
 			}
 		}
@@ -305,7 +305,7 @@ namespace IRIS.Node
 			}
 			catch (Exception ex)
 			{
-				Debug.LogWarning($"Error processing request for service {Name}: {ex.Message}");
+				Debug.LogWarning($"Error processing request for service {Name}: {ex.Message}\n{ex.StackTrace}");
 				return new byte[][] { HandleErrorResponse(ex) };
 			}
 		}
@@ -353,7 +353,7 @@ namespace IRIS.Node
 			}
 			catch (Exception ex)
 			{
-				Debug.LogWarning($"Error processing request for service {Name}: {ex.Message}");
+				Debug.LogWarning($"Error processing request for service {Name}: {ex.Message}\n{ex.StackTrace}");
 				return new byte[][] { HandleErrorResponse(ex) };
 			}
 		}
@@ -403,7 +403,7 @@ namespace IRIS.Node
 			}
 			catch (Exception ex)
 			{
-				Debug.LogWarning($"Error processing request for service {Name}: {ex.Message}");
+				Debug.LogWarning($"Error processing request for service {Name}: {ex.Message}\n{ex.StackTrace}");
 				return new byte[][] { HandleErrorResponse(ex) };
 			}
 		}
