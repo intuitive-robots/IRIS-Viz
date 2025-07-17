@@ -61,7 +61,7 @@ public class QRSceneAlignment : MonoBehaviour
         indicator.SetActive(true);
         Debug.Log("Start QR Tracking");
         StartQRTracking(_data);
-        return IRISSignal.SUCCESS;
+        return IRISMSG.SUCCESS;
     }
 
     public string StopQRAlignment(string signal)
@@ -70,7 +70,7 @@ public class QRSceneAlignment : MonoBehaviour
         indicator.SetActive(false);
         Debug.Log("Stop QR Tracking");
         StopQRTracking();
-        return IRISSignal.SUCCESS;
+        return IRISMSG.SUCCESS;
     }
 
     public virtual void StartQRTracking(QRSceneAlignmentData data)

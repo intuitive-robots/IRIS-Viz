@@ -58,6 +58,7 @@
     },
     "dotnet.defaultSolution": "IRIS-Viz.sln",
     "cSpell.words": [
+        "IRISMSG",
         "IRISXR"
     ],
     "[csharp]": {
