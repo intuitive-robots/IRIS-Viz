@@ -14,15 +14,19 @@ namespace IRIS.SceneLoader
         [SerializeField] private GameObject sceneAxis;
         private Dictionary<string, GameObject> _simObjectDict = new();
         private Dictionary<string, Transform> _simObjTransDict = new();
-        private List<INetComponent> _serviceList = new();
+        // SceneLoader services
+        private IRISService<string, SimObject, string> createSimObjectService;
+        private IRISService<string, SimVisual, byte[], byte[], string> createSimVisualService;
+        private IRISService<string, string> subscribeRigidObjectsControllerService;
 
         void Start()
         {
             sceneAxis.SetActive(false);
             sceneAxis.name = $"{name}_SceneAxis_IRIS";
-            _serviceList.Add(new IRISService<string, SimObject, string>($"{gameObject.name}/CreateSimObject", CreateSimObjectCb));
-            _serviceList.Add(new IRISService<string, SimVisual, byte[], byte[], string>($"{gameObject.name}/CreateVisual", CreateSimVisualCb));
-            _serviceList.Add(new IRISService<string, string>($"{gameObject.name}/SubscribeRigidObjectsController", SubscribeRigidObjectsControllerCb));
+            IRISXRNode _xrNode = IRISXRNode.Instance;
+            createSimObjectService = new IRISService<string, SimObject, string>($"{gameObject.name}/CreateSimObject", CreateSimObjectCb);
+            createSimVisualService = new IRISService<string, SimVisual, byte[], byte[], string>($"{gameObject.name}/CreateVisual", CreateSimVisualCb);
+            subscribeRigidObjectsControllerService = new IRISService<string, string>($"{gameObject.name}/SubscribeRigidObjectsController", SubscribeRigidObjectsControllerCb);
         }
 
         static void ApplyTransform(Transform uTransform, IRISTransform simTrans)
@@ -51,7 +55,7 @@ namespace IRIS.SceneLoader
         private string CreateSimObjectCb(string parentName, SimObject simObject)
         {
             CreateSimObject(parentName, simObject);
-            return IRISSignal.SUCCESS;
+            return IRISMSG.SUCCESS;
         }
 
         public void CreateSimObject(string parentName, SimObject simObject)
@@ -73,13 +77,30 @@ namespace IRIS.SceneLoader
             }
             RegisterGameObject(simObject, newSimGameObject);
             ApplyTransform(newSimGameObject.transform, simObject.trans);
+            if (simObject.visuals != null)
+            {
+                foreach (var visual in simObject.visuals)
+                {
+                    // Skip creating visuals with mesh or material
+                    if (visual.mesh != null) continue;
+                    if (visual.material != null && visual.material.texture != null) continue;
+                    CreateSimVisual(newSimGameObject.name, visual, null, null);
+                }
+            }
+            if (simObject.children != null)
+            {
+                foreach (var child in simObject.children)
+                {
+                    CreateSimObject(newSimGameObject.name, child);
+                }
+            }
             Debug.Log($"Created SimObject: {simObject.name}");
         }
 
         private string CreateSimVisualCb(string objName, SimVisual simVisual, byte[] meshBytes, byte[] textureBytes)
         {
             CreateSimVisual(objName, simVisual, meshBytes, textureBytes);
-            return IRISSignal.SUCCESS;
+            return IRISMSG.SUCCESS;
         }
 
 
@@ -192,7 +213,7 @@ namespace IRIS.SceneLoader
 
             RigidObjectsController rigidObjectsController = GetComponent<RigidObjectsController>();
             rigidObjectsController.StartSubscription(url);
-            return IRISSignal.SUCCESS;
+            return IRISMSG.SUCCESS;
         }
 
 
@@ -206,12 +227,11 @@ namespace IRIS.SceneLoader
             return _simObjTransDict;
         }
 
-        private void OnDestroy() {
-            foreach (var service in _serviceList)
-            {
-                service.Unregister();
-            }
-            _serviceList.Clear();
+        private void OnDestroy()
+        {
+            createSimObjectService?.Unregister();
+            createSimVisualService?.Unregister();
+            subscribeRigidObjectsControllerService?.Unregister();
             _simObjectDict.Clear();
             _simObjTransDict.Clear();
         }

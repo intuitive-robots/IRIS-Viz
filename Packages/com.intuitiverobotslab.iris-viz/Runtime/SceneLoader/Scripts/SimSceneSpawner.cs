@@ -27,12 +27,12 @@ namespace IRIS.SceneLoader
             if (_simSceneDict.ContainsKey(simScene.name))
             {
                 Debug.LogWarning($"SimScene with id {simScene.name} already exists, reusing the existing scene.");
-                return IRISSignal.SUCCESS;
+                return IRISMSG.SUCCESS;
             }
             GameObject simSceneObj = Instantiate(simScenePrefab, gameObject.transform);
             simSceneObj.name = simScene.name;
             _simSceneDict.Add(simScene.name, simSceneObj);
-            return IRISSignal.SUCCESS;
+            return IRISMSG.SUCCESS;
         }
 
         private string DeleteSimScene(string simSceneId)
@@ -41,12 +41,12 @@ namespace IRIS.SceneLoader
             {
                 Destroy(_simSceneDict[simSceneId]);
                 _simSceneDict.Remove(simSceneId);
-                return IRISSignal.SUCCESS;
+                return IRISMSG.SUCCESS;
             }
             else
             {
                 Debug.LogWarning($"SimScene with id {simSceneId} does not exist.");
-                return IRISSignal.ERROR;
+                return IRISMSG.ERROR;
             }
         }
 

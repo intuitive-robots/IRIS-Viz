@@ -45,6 +45,8 @@ namespace IRIS.SceneLoader
 	public class SimObject : SimAsset
 	{
 		public IRISTransform trans;
+		public List<SimVisual> visuals;
+		public List<SimObject> children;
 	}
 
 	public class SimScene : SimAsset
@@ -52,9 +54,9 @@ namespace IRIS.SceneLoader
 		// public SimObject root;
 	}
 
-	
 
-	
+
+
 	public class SimMesh : SimAsset
 	{
 		public string hash;
@@ -65,7 +67,7 @@ namespace IRIS.SceneLoader
 
 	}
 
-	
+
 	public class SimMaterial : SimAsset
 	{
 		public string hash;
@@ -77,7 +79,7 @@ namespace IRIS.SceneLoader
 		public SimTexture texture;
 	}
 
-	
+
 	public class SimTexture : SimAsset
 	{
 		public string hash;

@@ -22,17 +22,10 @@ namespace IRIS.Node
 		protected PublisherSocket _pubSocket;
 		protected string _topic;
 
-		public Publisher(string topic, bool globalNameSpace = false)
+		public Publisher(string topic)
 		{
 			IRISXRNode _XRNode = IRISXRNode.Instance;
-			if (globalNameSpace)
-			{
-				_topic = topic;
-			}
-			else
-			{
-				_topic = $"{_XRNode.localInfo.name}/{topic}";
-			}
+			_topic = topic;
 			_pubSocket = _XRNode._pubSocket;
 			if (!_XRNode.localInfo.topicList.Contains(_topic))
 			{
@@ -90,6 +83,9 @@ namespace IRIS.Node
 			_topic = topic;
 			_receiveAction = receiveAction;
 			_subSocket = new SubscriberSocket();
+			IRISXRNode _XRNode = IRISXRNode.Instance;
+			_XRNode._sockets.Add(_subSocket);
+
 		}
 
 		public void StartSubscription(string url, string topicName = null)
@@ -202,7 +198,7 @@ namespace IRIS.Node
 		public Func<byte[], RequestType> ProcessRequestFunc;
 		public Func<ResponseType, byte[]> ProcessResponseFunc;
 
-		public IRISService(string serviceName, Func<RequestType, ResponseType> onRequest, bool globalNameSpace = false)
+		public IRISService(string serviceName, Func<RequestType, ResponseType> onRequest)
 			: base(serviceName) // Call base constructor with parameters
 		{
 			_onRequest = onRequest ?? throw new ArgumentNullException(nameof(onRequest));
@@ -222,7 +218,7 @@ namespace IRIS.Node
 			}
 			catch (Exception ex)
 			{
-				Debug.LogWarning($"Error processing request for service {Name}: {ex.Message}");
+				Debug.LogWarning($"Error processing request for service {Name}: {ex.Message}\n{ex.StackTrace}");
 				return new byte[][] { HandleErrorResponse(ex) };
 			}
 		}
@@ -237,7 +233,7 @@ namespace IRIS.Node
 		public Func<byte[], RequestType2> ProcessRequest2Func;
 		public Func<ResponseType, byte[]> ProcessResponseFunc;
 
-		public IRISService(string serviceName, Func<RequestType1, RequestType2, ResponseType> onRequest, bool globalNameSpace = false)
+		public IRISService(string serviceName, Func<RequestType1, RequestType2, ResponseType> onRequest)
 			: base(serviceName)
 		{
 			_onRequest = onRequest ?? throw new ArgumentNullException(nameof(onRequest));
@@ -265,7 +261,7 @@ namespace IRIS.Node
 			}
 			catch (Exception ex)
 			{
-				Debug.LogWarning($"Error processing request for service {Name}: {ex.Message}");
+				Debug.LogWarning($"Error processing request for service {Name}: {ex.Message}\n{ex.StackTrace}");
 				return new byte[][] { HandleErrorResponse(ex) };
 			}
 		}
@@ -280,7 +276,7 @@ namespace IRIS.Node
 		public Func<byte[], RequestType3> ProcessRequest3Func;
 		public Func<ResponseType, byte[]> ProcessResponseFunc;
 
-		public IRISService(string serviceName, Func<RequestType1, RequestType2, RequestType3, ResponseType> onRequest, bool globalNameSpace = false)
+		public IRISService(string serviceName, Func<RequestType1, RequestType2, RequestType3, ResponseType> onRequest)
 			: base(serviceName)
 		{
 			_onRequest = onRequest ?? throw new ArgumentNullException(nameof(onRequest));
@@ -309,7 +305,7 @@ namespace IRIS.Node
 			}
 			catch (Exception ex)
 			{
-				Debug.LogWarning($"Error processing request for service {Name}: {ex.Message}");
+				Debug.LogWarning($"Error processing request for service {Name}: {ex.Message}\n{ex.StackTrace}");
 				return new byte[][] { HandleErrorResponse(ex) };
 			}
 		}
@@ -325,7 +321,7 @@ namespace IRIS.Node
 		public Func<byte[], RequestType4> ProcessRequest4Func;
 		public Func<ResponseType, byte[]> ProcessResponseFunc;
 
-		public IRISService(string serviceName, Func<RequestType1, RequestType2, RequestType3, RequestType4, ResponseType> onRequest, bool globalNameSpace = false)
+		public IRISService(string serviceName, Func<RequestType1, RequestType2, RequestType3, RequestType4, ResponseType> onRequest)
 			: base(serviceName)
 		{
 			_onRequest = onRequest ?? throw new ArgumentNullException(nameof(onRequest));
@@ -357,7 +353,7 @@ namespace IRIS.Node
 			}
 			catch (Exception ex)
 			{
-				Debug.LogWarning($"Error processing request for service {Name}: {ex.Message}");
+				Debug.LogWarning($"Error processing request for service {Name}: {ex.Message}\n{ex.StackTrace}");
 				return new byte[][] { HandleErrorResponse(ex) };
 			}
 		}
@@ -373,7 +369,7 @@ namespace IRIS.Node
 		public Func<byte[], RequestType5> ProcessRequest5Func;
 		public Func<ResponseType, byte[]> ProcessResponseFunc;
 
-		public IRISService(string serviceName, Func<RequestType1, RequestType2, RequestType3, RequestType4, RequestType5, ResponseType> onRequest, bool globalNameSpace = false)
+		public IRISService(string serviceName, Func<RequestType1, RequestType2, RequestType3, RequestType4, RequestType5, ResponseType> onRequest)
 			: base(serviceName)
 		{
 			_onRequest = onRequest ?? throw new ArgumentNullException(nameof(onRequest));
@@ -407,7 +403,7 @@ namespace IRIS.Node
 			}
 			catch (Exception ex)
 			{
-				Debug.LogWarning($"Error processing request for service {Name}: {ex.Message}");
+				Debug.LogWarning($"Error processing request for service {Name}: {ex.Message}\n{ex.StackTrace}");
 				return new byte[][] { HandleErrorResponse(ex) };
 			}
 		}
