@@ -26,7 +26,7 @@ namespace IRIS.Node
         private List<Task> multicastTasksList = new List<Task>();
         public Action SubscriptionSpin;
         public List<NetMQSocket> _sockets;
-        public PublisherSocket _pubSocket;
+        // public PublisherSocket _pubSocket;
         private ResponseSocket _resSocket;
         private Task serviceTask;
         public Dictionary<string, IRISService> serviceDict = new Dictionary<string, IRISService>();
@@ -50,10 +50,7 @@ namespace IRIS.Node
                 name = "UnityNode",
                 nodeID = Guid.NewGuid().ToString(),
                 type = "UnityNode",
-                servicePort = 0,
-                topicPort = 0,
-                serviceList = new List<string>(),
-                topicList = new List<string>()
+                port = 0,
             };
             // Default host name
             if (PlayerPrefs.HasKey("HostName"))
@@ -69,9 +66,15 @@ namespace IRIS.Node
             }
             // NOTE: Since the NetZMQ setting is initialized in "AsyncIO.ForceDotNet.Force();"
             // NOTE: we should initialize the sockets after that
-            _pubSocket = new PublisherSocket();
+            // _pubSocket = new PublisherSocket();
+            // _pubSocket.Bind("tcp://0.0.0.0:0");
+            // string pubEndpoint = _pubSocket.Options.LastEndpoint;
+            // Debug.Log($"Publisher initialized at port {pubEndpoint}");
+            // string pubPortString = pubEndpoint.Split(':')[2];
+            // localInfo.topicPort = pubPortString != null ? int.Parse(pubPortString) : 0;
+            // Initialize response socket for services
             _resSocket = new ResponseSocket();
-            _sockets = new List<NetMQSocket>() { _pubSocket, _resSocket };
+            _sockets = new List<NetMQSocket>() { _resSocket };
             Debug.Log("IRISXRNode started");
             InitializeService();
 
@@ -94,10 +97,8 @@ namespace IRIS.Node
         private void InitializeService()
         {
             _resSocket.Bind("tcp://0.0.0.0:0");
-            string endpoint = _resSocket.Options.LastEndpoint;
-            Debug.Log($"Service initialized at port {endpoint}");
-            string portString = endpoint.Split(':')[2];
-            localInfo.servicePort = portString != null ? int.Parse(portString) : 0;
+            localInfo.port = NetworkUtils.GetNetZMQSocketPort(_resSocket);
+            Debug.Log($"Service initialized at port {localInfo.port}");
             getNodeInfoService = new IRISService<string, NodeInfo>("GetNodeInfo", (req) => localInfo);
             renameService = new IRISService<string, string>("Rename", Rename);
             getServiceListService = new IRISService<string, List<string>>("GetServiceList", GetServiceList);
@@ -119,7 +120,7 @@ namespace IRIS.Node
                 Debug.Log($"UDP client initialized successfully for interface {ipAddress}");
                 while (!cancellationToken.IsCancellationRequested)
                 {
-                    byte[] msgBytes = MsgUtils.String2Bytes($"{localInfo.nodeID}{localInfo.servicePort}");
+                    byte[] msgBytes = MsgUtils.String2Bytes($"{localInfo.nodeID}{localInfo.port}");
                     client.Send(msgBytes, msgBytes.Length, remoteEndPoint);
                     // Wait for the specified interval or until cancellation is requested
                     await Task.Delay(TimeSpan.FromSeconds(messageSendInterval), cancellationToken);

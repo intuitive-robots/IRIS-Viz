@@ -21,36 +21,28 @@ namespace IRIS.Node
 	{
 		protected PublisherSocket _pubSocket;
 		protected string _topic;
+		private Func<MsgType, byte[]> onEncodeMsg;
+		public int Port { get; private set; }
 
-		public Publisher(string topic)
+		public Publisher(string topic, int port = 0)
 		{
 			IRISXRNode _XRNode = IRISXRNode.Instance;
 			_topic = topic;
-			_pubSocket = _XRNode._pubSocket;
-			if (!_XRNode.localInfo.topicList.Contains(_topic))
+			_pubSocket = new PublisherSocket();
+			_pubSocket.Bind($"tcp://0.0.0.0:{port}");
+			Port = NetworkUtils.GetNetZMQSocketPort(_pubSocket);
+			_XRNode._sockets.Add(_pubSocket);
+			if (!_XRNode.localInfo.topicDict.ContainsKey(_topic))
 			{
-				_XRNode.localInfo.topicList.Add(_topic);
+				_XRNode.localInfo.topicDict[_topic] = Port;
 			}
+			onEncodeMsg = MsgUtils.CreateEncoderProcessor<MsgType>();
 			Debug.Log($"Publisher for topic {_topic} is created");
-		}
-
-		public void Publish(string data)
-		{
-			// Combine topic and message
-			string msg = MsgUtils.CombineHeaderWithMessage(_topic, data);
-			// Send the message
-			TryPublish(MsgUtils.String2Bytes(msg));
-		}
-
-		public void Publish(byte[] data)
-		{
-			TryPublish(MsgUtils.CombineHeaderWithMessage(_topic, data));
 		}
 
 		public void Publish(MsgType data)
 		{
-			string msg = MsgUtils.CombineHeaderWithMessage(_topic, JsonConvert.SerializeObject(data));
-			TryPublish(MsgUtils.String2Bytes(msg));
+			TryPublish(onEncodeMsg(data));
 		}
 
 		private void TryPublish(byte[] msg)

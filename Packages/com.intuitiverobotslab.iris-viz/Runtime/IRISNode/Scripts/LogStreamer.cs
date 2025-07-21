@@ -50,6 +50,8 @@ namespace IRIS.Node
 
         void Update()
         {
+            // _logPublisher.Publish("LogStreamer is running...");
+            Debug.Log("LogStreamer is running...");
             // TODO: finish the fps logger
             // frameCounter += 1;
             // float totalTime = Time.realtimeSinceStartup - timer;

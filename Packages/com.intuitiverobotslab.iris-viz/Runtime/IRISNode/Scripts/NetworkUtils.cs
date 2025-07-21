@@ -4,6 +4,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Net.NetworkInformation;
 using UnityEngine;
+using NetMQ;
 
 namespace IRIS.Utilities
 {
@@ -32,10 +33,9 @@ namespace IRIS.Utilities
 		public string name;
 		public string nodeID;
 		public string type;
-		public int servicePort;
-		public int topicPort;
+		public int port;
 		public List<string> serviceList = new();
-		public List<string> topicList = new();
+		public Dictionary<string, int> topicDict = new();
 	}
 
 	public static class NetworkUtils
@@ -174,6 +174,14 @@ namespace IRIS.Utilities
 				}
 			}
 			return true;
+		}
+
+		public static int GetNetZMQSocketPort(NetMQSocket _socket)
+		{
+			string pubEndpoint = _socket.Options.LastEndpoint;
+			Debug.Log($"Publisher initialized at port {pubEndpoint}");
+			string pubPortString = pubEndpoint.Split(':')[2];
+			return pubPortString != null ? int.Parse(pubPortString) : 0;
 		}
 
 	}
