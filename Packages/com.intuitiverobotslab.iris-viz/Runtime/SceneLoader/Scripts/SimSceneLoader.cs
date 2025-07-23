@@ -112,6 +112,7 @@ namespace IRIS.SceneLoader
                 return;
             }
             GameObject visualObj;
+            Debug.Log($"Creating visual for {objName}");
             switch (simVisual.type)
             {
                 case "CUBE":
