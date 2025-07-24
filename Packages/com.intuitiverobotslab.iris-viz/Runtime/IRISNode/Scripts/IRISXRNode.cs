@@ -80,7 +80,7 @@ namespace IRIS.Node
 
             // Initialize cancellation token
             cancellationTokenSource = new CancellationTokenSource();
-            serviceTask = Task.Run(() => StartServiceTask(cancellationTokenSource.Token), cancellationTokenSource.Token);
+            serviceTask = Task.Run(async () => await StartServiceTask(cancellationTokenSource.Token), cancellationTokenSource.Token);
             foreach (IPAddress ipAddress in NetworkUtils.GetNetworkInterfaces(true, true))
             {
                 // Start the multicast sending task for each interface
@@ -198,11 +198,12 @@ namespace IRIS.Node
             }
         }
 
-        private void StartServiceTask(CancellationToken cancellationToken)
+        private async Task StartServiceTask(CancellationToken cancellationToken)
         {
             while (!cancellationToken.IsCancellationRequested)
             {
                 if (!_resSocket.HasIn) continue;
+                await Task.Delay(50, cancellationToken);
                 try
                 {
                     // Use timeout to allow cancellation checks
@@ -282,7 +283,8 @@ namespace IRIS.Node
             // Wait for service task completion
             try
             {
-                serviceTask?.Wait(TimeSpan.FromSeconds(0.5));
+                serviceTask?.Wait();
+                Debug.Log("Service task completed successfully.");
             }
             catch (Exception e)
             {
