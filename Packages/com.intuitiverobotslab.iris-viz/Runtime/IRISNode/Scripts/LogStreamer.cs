@@ -19,7 +19,7 @@ namespace IRIS.Node
             toggleConsoleLoggerService = new IRISService<string, string>("ToggleConsoleLogger", ToggleLogStreamerService);
             // _fpsPublisher = new Publisher<string>("FPS");
             // timer = Time.realtimeSinceStartup;
-            InvokeRepeating("PublishTestLog", 0.0f, 1.0f);
+            // InvokeRepeating("PublishTestLog", 0.0f, 1.0f);
         }
 
         private int frameCounter = 0;

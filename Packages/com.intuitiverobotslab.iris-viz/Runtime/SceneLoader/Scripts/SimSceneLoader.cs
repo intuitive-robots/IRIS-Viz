@@ -4,6 +4,7 @@ using UnityEngine;
 using System.Runtime.InteropServices;
 using IRIS.Node;
 using IRIS.Utilities;
+using Unity.Android.Gradle.Manifest;
 
 namespace IRIS.SceneLoader
 {
@@ -54,7 +55,10 @@ namespace IRIS.SceneLoader
 
         private string CreateSimObjectCb(string parentName, SimObject simObject)
         {
-            CreateSimObject(parentName, simObject);
+            UnityMainThreadDispatcher.Instance.Enqueue(() =>
+            {
+                CreateSimObject(parentName, simObject);
+            });
             return IRISMSG.SUCCESS;
         }
 
@@ -99,7 +103,10 @@ namespace IRIS.SceneLoader
 
         private string CreateSimVisualCb(string objName, SimVisual simVisual, byte[] meshBytes, byte[] textureBytes)
         {
-            CreateSimVisual(objName, simVisual, meshBytes, textureBytes);
+            UnityMainThreadDispatcher.Instance.Enqueue(() =>
+            {
+                CreateSimVisual(objName, simVisual, meshBytes, textureBytes);
+            });
             return IRISMSG.SUCCESS;
         }
 
@@ -211,9 +218,11 @@ namespace IRIS.SceneLoader
 
         private string SubscribeRigidObjectsControllerCb(string url)
         {
-
-            RigidObjectsController rigidObjectsController = GetComponent<RigidObjectsController>();
-            rigidObjectsController.StartSubscription(url);
+            UnityMainThreadDispatcher.Instance.Enqueue(() =>
+            {
+                RigidObjectsController rigidObjectsController = GetComponent<RigidObjectsController>();
+                rigidObjectsController.StartSubscription(url);
+            });
             return IRISMSG.SUCCESS;
         }
 

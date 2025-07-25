@@ -29,9 +29,13 @@ namespace IRIS.SceneLoader
                 Debug.LogWarning($"SimScene with id {simScene.name} already exists, reusing the existing scene.");
                 return IRISMSG.SUCCESS;
             }
-            GameObject simSceneObj = Instantiate(simScenePrefab, gameObject.transform);
-            simSceneObj.name = simScene.name;
-            _simSceneDict.Add(simScene.name, simSceneObj);
+            // make sure that the scene is loaded after this method is called
+            UnityMainThreadDispatcher.Instance.EnqueueAndWait(() =>
+            {
+                GameObject simSceneObj = Instantiate(simScenePrefab, gameObject.transform);
+                simSceneObj.name = simScene.name;
+                _simSceneDict.Add(simScene.name, simSceneObj);
+            });
             return IRISMSG.SUCCESS;
         }
 
@@ -39,8 +43,14 @@ namespace IRIS.SceneLoader
         {
             if (_simSceneDict.ContainsKey(simSceneId))
             {
-                Destroy(_simSceneDict[simSceneId]);
-                _simSceneDict.Remove(simSceneId);
+                UnityMainThreadDispatcher.Instance.Enqueue(() =>
+                {
+                    if (_simSceneDict[simSceneId] != null)
+                    {
+                        Destroy(_simSceneDict[simSceneId]);
+                    }
+                    _simSceneDict.Remove(simSceneId);
+                });
                 return IRISMSG.SUCCESS;
             }
             else

@@ -66,13 +66,6 @@ namespace IRIS.Node
             }
             // NOTE: Since the NetZMQ setting is initialized in "AsyncIO.ForceDotNet.Force();"
             // NOTE: we should initialize the sockets after that
-            // _pubSocket = new PublisherSocket();
-            // _pubSocket.Bind("tcp://0.0.0.0:0");
-            // string pubEndpoint = _pubSocket.Options.LastEndpoint;
-            // Debug.Log($"Publisher initialized at port {pubEndpoint}");
-            // string pubPortString = pubEndpoint.Split(':')[2];
-            // localInfo.topicPort = pubPortString != null ? int.Parse(pubPortString) : 0;
-            // Initialize response socket for services
             _resSocket = new ResponseSocket();
             _sockets = new List<NetMQSocket>() { _resSocket };
             Debug.Log("IRISXRNode started");
@@ -80,7 +73,7 @@ namespace IRIS.Node
 
             // Initialize cancellation token
             cancellationTokenSource = new CancellationTokenSource();
-            serviceTask = Task.Run(async () => await StartServiceTask(cancellationTokenSource.Token), cancellationTokenSource.Token);
+            serviceTask = Task.Run(() => StartServiceTask(cancellationTokenSource.Token), cancellationTokenSource.Token);
             foreach (IPAddress ipAddress in NetworkUtils.GetNetworkInterfaces(true, true))
             {
                 // Start the multicast sending task for each interface
@@ -198,12 +191,12 @@ namespace IRIS.Node
             }
         }
 
-        private async Task StartServiceTask(CancellationToken cancellationToken)
+        private void StartServiceTask(CancellationToken cancellationToken)
         {
             while (!cancellationToken.IsCancellationRequested)
             {
                 if (!_resSocket.HasIn) continue;
-                await Task.Delay(50, cancellationToken);
+                // await Task.Delay(0, cancellationToken);
                 try
                 {
                     // Use timeout to allow cancellation checks
@@ -221,10 +214,7 @@ namespace IRIS.Node
                                 _resSocket.SendFrame(IRISMSG.ERROR);
                                 return;
                             }
-                            byte[][] response = UnityMainThreadDispatcher.Instance.EnqueueAndWait(() =>
-                            {
-                                return serviceCallbacks[serviceName](messageReceived.Skip(1).ToArray());
-                            });
+                            byte[][] response = serviceCallbacks[serviceName](messageReceived.Skip(1).ToArray());
                             _resSocket.SendMultipartBytes(response);
                         }
                         else
@@ -277,7 +267,7 @@ namespace IRIS.Node
             {
                 if (t.IsFaulted)
                 {
-                    Debug.LogError("Error in multicast tasks: " + t.Exception?.Message);
+                    Debug.LogError($"Error in multicast tasks: {t.Exception?.Message}\n{t.Exception?.StackTrace}");
                 }
             });
             // Wait for service task completion
@@ -288,7 +278,7 @@ namespace IRIS.Node
             }
             catch (Exception e)
             {
-                Debug.LogError("Error waiting for service task completion: " + e.Message);
+                Debug.LogError($"Error waiting for service task completion: {e.Message}\n{e.StackTrace}");
             }
             // Clean up sockets
             foreach (var socket in _sockets)
