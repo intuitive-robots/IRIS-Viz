@@ -4,7 +4,6 @@ using UnityEngine;
 using System.Runtime.InteropServices;
 using IRIS.Node;
 using IRIS.Utilities;
-using Unity.Android.Gradle.Manifest;
 
 namespace IRIS.SceneLoader
 {
