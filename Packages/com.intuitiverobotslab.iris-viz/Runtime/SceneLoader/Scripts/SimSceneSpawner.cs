@@ -60,5 +60,29 @@ namespace IRIS.SceneLoader
             }
         }
 
+        public GameObject GetSceneObject(string sceneName)
+        {
+            if (_simSceneDict.ContainsKey(sceneName))
+            {
+                return _simSceneDict[sceneName];
+            }
+            else
+            {
+                return null;
+            }
+        }
+
+        public Transform GetSceneTransform(string sceneName)
+        {
+            if (_simSceneDict.ContainsKey(sceneName))
+            {
+                return _simSceneDict[sceneName].transform;
+            }
+            else
+            {
+                return null;
+            }
+        }
+
     }
 }
