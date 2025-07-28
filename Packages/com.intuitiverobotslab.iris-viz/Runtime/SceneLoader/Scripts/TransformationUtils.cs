@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace IRIS.Utilities
 {
-    public static class TransformUtils
+    public static class TransformationUtils
     {
         public static List<float> Unity2ROS(Vector3 position)
         {
