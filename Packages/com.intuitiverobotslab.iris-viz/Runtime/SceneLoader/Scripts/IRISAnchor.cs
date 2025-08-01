@@ -30,64 +30,35 @@ namespace IRIS.Utilities
 
     public class IRISAnchor : MonoBehaviour
     {
-
-
-        [SerializeField] protected GameObject indicator;
+        protected string _anchorName;
         protected IRISAnchorData _data;
         protected bool isTrackingQR = false;
-        private IRISService<IRISAnchorData, string> startAlignmentService;
-        private IRISService<string, string> stopAlignmentService;
+        private IRISService<IRISAnchorData, string> applyOffsetService;
 
-        private void Start()
+        public void Initialize(string anchorName)
         {
-            startAlignmentService = new("ApplyOffset", StartAlignment);
-            stopAlignmentService = new("ToggleAnchorTracking", StopAlignment);
-        }
-
-        protected void ApplyOffset()
-        {
-            foreach (Transform child in transform)
+            _anchorName = anchorName;
+            applyOffsetService = new IRISService<IRISAnchorData, string>($"{_anchorName}/ApplyOffset", (data) =>
             {
-                if (child.gameObject == indicator)
-                    continue;
-                child.SetLocalPositionAndRotation(_data.GetPos(), _data.GetRot());
-            }
+                ApplyOffset(data);
+                return IRISMSG.SUCCESS;
+            });
         }
 
-        public string StartAlignment(IRISAnchorData data)
+        protected void ApplyOffset(IRISAnchorData data)
         {
             _data = data;
-            isTrackingQR = true;
-            indicator.SetActive(true);
-            Debug.Log("Start Scene Tracking");
-            StartSceneTracking(_data);
-            return IRISMSG.SUCCESS;
+            foreach (Transform child in transform)
+            {
+                child.SetLocalPositionAndRotation(_data.GetPos(), _data.GetRot());
+            }
+            Debug.Log($"Applying offset for {name}");
         }
 
-        public string StopAlignment(string signal)
-        {
-            isTrackingQR = false;
-            indicator.SetActive(false);
-            Debug.Log("Stop Scene Tracking");
-            StopSceneTracking();
-            return IRISMSG.SUCCESS;
-        }
+        public virtual void StartTracking() { }
 
-        public virtual void StartSceneTracking(IRISAnchorData data)
-        {
-            ApplyOffset();  // Only for testing
-        }
+        public virtual void StopTracking() { }
 
-        public virtual void StopSceneTracking()
-        {
-        }
-
-        protected void SetSceneOrigin(Pose origin)
-        {
-            transform.position = origin.position;
-            transform.rotation = origin.rotation;
-            ApplyOffset();
-        }
     }
 
 }
