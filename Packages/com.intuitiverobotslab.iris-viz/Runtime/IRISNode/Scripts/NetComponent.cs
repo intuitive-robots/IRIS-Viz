@@ -1,7 +1,6 @@
 using NetMQ;
 using NetMQ.Sockets;
 using System;
-using Newtonsoft.Json;
 using UnityEngine;
 using IRIS.Utilities;
 

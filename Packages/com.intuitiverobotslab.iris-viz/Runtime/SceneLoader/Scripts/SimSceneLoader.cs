@@ -97,7 +97,9 @@ namespace IRIS.SceneLoader
                     CreateSimObject(newSimGameObject.name, child);
                 }
             }
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
             Debug.Log($"Created SimObject: {simObject.name}");
+#endif
         }
 
         private string CreateSimVisualCb(string objName, SimVisual simVisual, byte[] meshBytes, byte[] textureBytes)

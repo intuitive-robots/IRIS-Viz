@@ -45,25 +45,25 @@ namespace IRIS.Node
             // It may not be necessary on Linux, but Windows requires it
             AsyncIO.ForceDotNet.Force();
             // Initialize local node info
-            localInfo = new NodeInfo
-            {
-                name = "UnityNode",
-                nodeID = Guid.NewGuid().ToString(),
-                type = "UnityNode",
-                port = 0,
-            };
             // Default host name
+            string nodeName = $"Unity-{Environment.MachineName}";
             if (PlayerPrefs.HasKey("HostName"))
             {
                 // The key exists, proceed to get the value
-                string nodeName = PlayerPrefs.GetString("HostName");
+                nodeName = PlayerPrefs.GetString("HostName");
                 Debug.Log($"Find Host Name: {nodeName}");
             }
             else
             {
-                string nodeName = $"Unity-{Environment.MachineName}";
                 Debug.Log($"Host Name not found, using default name {nodeName}");
             }
+            localInfo = new NodeInfo
+            {
+                name = nodeName,
+                nodeID = Guid.NewGuid().ToString(),
+                type = "UnityNode",
+                port = 0,
+            };
             // NOTE: Since the NetZMQ setting is initialized in "AsyncIO.ForceDotNet.Force();"
             // NOTE: we should initialize the sockets after that
             _resSocket = new ResponseSocket();
@@ -142,54 +142,60 @@ namespace IRIS.Node
             }
         }
 
-        public void ServiceRespondSpin()
-        {
-            if (!_resSocket.HasIn) return;
-            // now we need to carefully handle the service request
-            // make sure that it would not block the main thread
-            try
-            {
-                // Use timeout to allow cancellation checks
-                List<byte[]> messageReceived = _resSocket.ReceiveMultipartBytes();
-                if (messageReceived.Count > 1)
-                {
-                    // Extract service name from first frame
-                    string serviceName = MsgUtils.Bytes2String(messageReceived[0]);
-                    if (serviceCallbacks.ContainsKey(serviceName))
-                    {
-                        // Run callback on background thread if it's CPU-intensive
-                        byte[][] response = serviceCallbacks[serviceName](messageReceived.Skip(1).ToArray());
-                        _resSocket.SendMultipartBytes(response);
-                    }
-                    else
-                    {
-                        Debug.LogWarning($"Service {serviceName} not found");
-                        _resSocket.SendFrame(IRISMSG.NOTFOUND);
-                    }
-                }
-                else
-                {
-                    Debug.LogWarning("Received message does not contain service name or request data");
-                    _resSocket.SendFrame(IRISMSG.ERROR);
-                }
-            }
-            catch (TimeoutException)
-            {
-                // TODO: Make sure that the timeout is not too long
-                // Timeout is expected - allows cancellation token to be checked
-                Debug.Log("Timeout while waiting for service request, continuing...");
-            }
-            catch (OperationCanceledException)
-            {
-                Debug.Log("Service task was cancelled");
-                return; // Exit the loop if cancellation is requested
-            }
-            catch (Exception e)
-            {
-                Debug.LogError("Error receiving service request: " + e.Message);
-                _resSocket.SendFrame(IRISMSG.ERROR);
-            }
-        }
+        // This function is replaced by StartServiceTask
+       // It may help in the future if we want to run it in the main thread
+
+        //         public void ServiceRespondSpin()
+        //         {
+        //             if (!_resSocket.HasIn) return;
+        //             // now we need to carefully handle the service request
+        //             // make sure that it would not block the main thread
+        //             try
+        //             {
+        //                 // Use timeout to allow cancellation checks
+        //                 List<byte[]> messageReceived = _resSocket.ReceiveMultipartBytes();
+        //                 if (messageReceived.Count > 1)
+        //                 {
+        //                     // Extract service name from first frame
+        //                     string serviceName = MsgUtils.Bytes2String(messageReceived[0]);
+        // // #if UNITY_EDITOR || DEVELOPMENT_BUILD
+        //                     Debug.Log($"Received service request for {serviceName}");
+        // // #endif
+        //                     if (serviceCallbacks.ContainsKey(serviceName))
+        //                     {
+        //                         // Run callback on background thread if it's CPU-intensive
+        //                         byte[][] response = serviceCallbacks[serviceName](messageReceived.Skip(1).ToArray());
+        //                         _resSocket.SendMultipartBytes(response);
+        //                     }
+        //                     else
+        //                     {
+        //                         Debug.LogWarning($"Service {serviceName} not found");
+        //                         _resSocket.SendFrame(IRISMSG.NOTFOUND);
+        //                     }
+        //                 }
+        //                 else
+        //                 {
+        //                     Debug.LogWarning("Received message does not contain service name or request data");
+        //                     _resSocket.SendFrame(IRISMSG.ERROR);
+        //                 }
+        //             }
+        //             catch (TimeoutException)
+        //             {
+        //                 // TODO: Make sure that the timeout is not too long
+        //                 // Timeout is expected - allows cancellation token to be checked
+        //                 Debug.Log("Timeout while waiting for service request, continuing...");
+        //             }
+        //             catch (OperationCanceledException)
+        //             {
+        //                 Debug.Log("Service task was cancelled");
+        //                 return; // Exit the loop if cancellation is requested
+        //             }
+        //             catch (Exception e)
+        //             {
+        //                 Debug.LogError("Error receiving service request: " + e.Message);
+        //                 _resSocket.SendFrame(IRISMSG.ERROR);
+        //             }
+        //         }
 
         private void StartServiceTask(CancellationToken cancellationToken)
         {
@@ -205,15 +211,18 @@ namespace IRIS.Node
                     {
                         // Extract service name from first frame
                         string serviceName = MsgUtils.Bytes2String(messageReceived[0]);
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+                        Debug.Log($"Received service request for {serviceName}");
+#endif
                         if (serviceCallbacks.ContainsKey(serviceName))
                         {
                             // Run callback on background thread if it's CPU-intensive
-                            if (UnityMainThreadDispatcher.Instance == null)
-                            {
-                                Debug.LogError("UnityMainThreadDispatcher is not initialized. Cannot process service request.");
-                                _resSocket.SendFrame(IRISMSG.ERROR);
-                                return;
-                            }
+                            // if (UnityMainThreadDispatcher.Instance == null)
+                            // {
+                            //     Debug.LogError("UnityMainThreadDispatcher is not initialized. Cannot process service request.");
+                            //     _resSocket.SendFrame(IRISMSG.ERROR);
+                            //     return;
+                            // }
                             byte[][] response = serviceCallbacks[serviceName](messageReceived.Skip(1).ToArray());
                             _resSocket.SendMultipartBytes(response);
                         }
@@ -302,10 +311,13 @@ namespace IRIS.Node
 
         public string Rename(string newName)
         {
-            localInfo.name = newName;
-            PlayerPrefs.SetString("HostName", localInfo.name);
-            Debug.Log($"Change Host Name to {localInfo.name}");
-            PlayerPrefs.Save();
+            UnityMainThreadDispatcher.Instance.Enqueue(() =>
+            {
+                localInfo.name = newName;
+                PlayerPrefs.SetString("HostName", localInfo.name);
+                Debug.Log($"Change Host Name to {localInfo.name}");
+                PlayerPrefs.Save();                
+            });
             return IRISMSG.SUCCESS;
         }
 

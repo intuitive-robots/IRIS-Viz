@@ -23,7 +23,7 @@ namespace IRIS.Node
         }
 
         private int frameCounter = 0;
-        private float timer = 0;
+        // private float timer = 0;
 
         void HandleLog(string logString, string stackTrace, LogType type)
         {
