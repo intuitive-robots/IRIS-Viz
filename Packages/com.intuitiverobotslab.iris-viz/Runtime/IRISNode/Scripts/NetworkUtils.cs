@@ -32,10 +32,70 @@ namespace IRIS.Utilities
 	{
 		public string name;
 		public string nodeID;
+		public string nodeInfoID;
 		public string type;
 		public int port;
 		public List<string> serviceList = new();
 		public Dictionary<string, int> topicDict = new();
+
+		public NodeInfo(string nodeName, string nodeType, int servicePort)
+		{
+			name = nodeName;
+			nodeID = Guid.NewGuid().ToString();
+			nodeInfoID = Guid.NewGuid().ToString();
+			type = nodeType;
+			port = servicePort;
+		}
+
+		public void AddService(string serviceName)
+		{
+			if (!serviceList.Contains(serviceName))
+			{
+				serviceList.Add(serviceName);
+			}
+			GenerateNewNodeInfoID();
+		}
+
+		public void RemoveService(string serviceName)
+		{
+			if (serviceList.Contains(serviceName))
+			{
+				serviceList.Remove(serviceName);
+			}
+			GenerateNewNodeInfoID();
+		}
+
+
+		public void AddTopic(string topicName, int port)
+		{
+			if (!topicDict.ContainsKey(topicName))
+			{
+				topicDict[topicName] = port;
+			}
+			GenerateNewNodeInfoID();
+		}
+
+		public void RemoveTopic(string topicName)
+		{
+			if (topicDict.ContainsKey(topicName))
+			{
+				topicDict.Remove(topicName);
+			}
+			GenerateNewNodeInfoID();
+		}
+
+		private void GenerateNewNodeInfoID()
+		{
+			nodeInfoID = Guid.NewGuid().ToString();
+		}
+
+		public void Rename(string newName)
+		{
+			name = newName;
+			GenerateNewNodeInfoID();
+		}
+
+
 	}
 
 	public static class NetworkUtils

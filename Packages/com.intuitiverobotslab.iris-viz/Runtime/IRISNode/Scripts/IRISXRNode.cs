@@ -57,13 +57,7 @@ namespace IRIS.Node
             {
                 Debug.Log($"Host Name not found, using default name {nodeName}");
             }
-            localInfo = new NodeInfo
-            {
-                name = nodeName,
-                nodeID = Guid.NewGuid().ToString(),
-                type = "UnityNode",
-                port = 0,
-            };
+            localInfo = new NodeInfo(nodeName, "UnityNode", 0);
             // NOTE: Since the NetZMQ setting is initialized in "AsyncIO.ForceDotNet.Force();"
             // NOTE: we should initialize the sockets after that
             _resSocket = new ResponseSocket();
@@ -113,7 +107,7 @@ namespace IRIS.Node
                 Debug.Log($"UDP client initialized successfully for interface {ipAddress}");
                 while (!cancellationToken.IsCancellationRequested)
                 {
-                    byte[] msgBytes = MsgUtils.String2Bytes($"{localInfo.nodeID}{localInfo.port}");
+                    byte[] msgBytes = MsgUtils.String2Bytes($"{localInfo.nodeID}{localInfo.nodeInfoID}{localInfo.port}");
                     client.Send(msgBytes, msgBytes.Length, remoteEndPoint);
                     // Wait for the specified interval or until cancellation is requested
                     await Task.Delay(TimeSpan.FromSeconds(messageSendInterval), cancellationToken);
@@ -313,7 +307,7 @@ namespace IRIS.Node
         {
             UnityMainThreadDispatcher.Instance.Enqueue(() =>
             {
-                localInfo.name = newName;
+                localInfo.Rename(newName);
                 PlayerPrefs.SetString("HostName", localInfo.name);
                 Debug.Log($"Change Host Name to {localInfo.name}");
                 PlayerPrefs.Save();                
