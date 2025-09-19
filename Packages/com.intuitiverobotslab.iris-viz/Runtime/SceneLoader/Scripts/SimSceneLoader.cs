@@ -10,8 +10,7 @@ namespace IRIS.SceneLoader
 
     public class SimSceneLoader : MonoBehaviour
     {
-        [SerializeField] private Material defaultMaterial;
-        [SerializeField] private GameObject sceneAxis;
+        private SimMaterialResolver materialResolver;
         private Dictionary<string, GameObject> _simObjectDict = new();
         private Dictionary<string, Transform> _simObjTransDict = new();
         // SceneLoader services
@@ -21,9 +20,7 @@ namespace IRIS.SceneLoader
 
         void Start()
         {
-            sceneAxis.SetActive(false);
-            sceneAxis.name = $"{name}_SceneAxis_IRIS";
-            IRISXRNode _xrNode = IRISXRNode.Instance;
+            materialResolver = SimSceneSpawner.Instance.GetMaterialResolver();
             createSimObjectService = new IRISService<string, SimObject, string>($"{gameObject.name}/CreateSimObject", CreateSimObjectCb);
             createSimVisualService = new IRISService<string, SimVisual, byte[], byte[], string>($"{gameObject.name}/CreateVisual", CreateSimVisualCb);
             subscribeRigidObjectsControllerService = new IRISService<string, string>($"{gameObject.name}/SubscribeRigidObjectsController", SubscribeRigidObjectsControllerCb);
@@ -151,10 +148,19 @@ namespace IRIS.SceneLoader
                     Debug.LogWarning($"Unknown SimVisual type {simVisual.type}, creating an empty GameObject.");
                     return;
             }
-            BuildMaterial(simVisual.material, visualObj, textureBytes);
+            Renderer visualRenderer = visualObj.GetComponent<Renderer>();
+            if (visualRenderer != null)
+            {
+                materialResolver.ApplyMaterial(simVisual, visualRenderer);
+            }
+            if (simVisual.material.texture != null)
+            {
+                BuildTexture(simVisual.material.texture, visualRenderer.material, textureBytes);
+            }
             visualObj.transform.SetParent(_simObjTransDict[objName], false);
             ApplyTransform(visualObj.transform, simVisual.trans);
         }
+
 
         public void BuildMesh(SimMesh simMesh, GameObject visualObj, byte[] meshBytes)
         {
@@ -168,46 +174,6 @@ namespace IRIS.SceneLoader
             };
         }
 
-        public void BuildMaterial(SimMaterial simMat, GameObject visualObj, byte[] textureBytes)
-        {
-            Material mat = new Material(defaultMaterial);
-            if (simMat.color.Count == 3)
-            {
-                simMat.color.Add(1.0f);
-            }
-            else if (simMat.color.Count != 4)
-            {
-                Debug.LogWarning($"Invalid color for {visualObj.name}, using default color.");
-                simMat.emissionColor = new List<float> { 1.0f, 1.0f, 1.0f, 1.0f };
-            }
-            // Transparency
-            if (simMat.color[3] < 1)
-            {
-                mat.SetFloat("_Mode", 2);
-                mat.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
-                mat.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
-                mat.SetInt("_ZWrite", 0);
-                mat.DisableKeyword("_ALPHATEST_ON");
-                mat.EnableKeyword("_ALPHABLEND_ON");
-                mat.DisableKeyword("_ALPHAPREMULTIPLY_ON");
-                mat.renderQueue = 3000;
-            }
-            // In URP, the set color function is using "_BaseColor" instead of "_Color"
-            mat.SetColor("_BaseColor", new Color(simMat.color[0], simMat.color[1], simMat.color[2], simMat.color[3]));
-            if (simMat.emissionColor != null)
-            {
-                mat.SetColor("_emissionColor", new Color(simMat.emissionColor[0], simMat.emissionColor[1], simMat.emissionColor[2], simMat.emissionColor[3]));
-            }
-            mat.SetFloat("_specularHighlights", simMat.specular);
-            mat.SetFloat("_Smoothness", simMat.shininess);
-            mat.SetFloat("_GlossyReflections", simMat.reflectance);
-            visualObj.GetComponent<Renderer>().material = mat;
-            if (simMat.texture != null)
-            {
-                BuildTexture(simMat.texture, mat, textureBytes);
-            }
-        }
-
         public void BuildTexture(SimTexture simTex, Material mat, byte[] textureBytes)
         {
             Texture2D tex = new Texture2D(simTex.width, simTex.height, TextureFormat.RGB24, false);
@@ -216,6 +182,8 @@ namespace IRIS.SceneLoader
             mat.mainTexture = tex;
             mat.mainTextureScale = new Vector2(simTex.textureScale[0], simTex.textureScale[1]);
         }
+
+
 
         private string SubscribeRigidObjectsControllerCb(string url)
         {
@@ -245,8 +213,8 @@ namespace IRIS.SceneLoader
             subscribeRigidObjectsControllerService?.Unregister();
             _simObjectDict.Clear();
             _simObjTransDict.Clear();
+            materialResolver?.Cleanup();
         }
-
 
     }
 }

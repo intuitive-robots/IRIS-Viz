@@ -7,7 +7,7 @@ using IRIS.Utilities;
 namespace IRIS.SceneLoader
 {
 
-    public class SimSceneSpawner : MonoBehaviour
+    public class SimSceneSpawner : Singleton<SimSceneSpawner>
     {
         public Action OnSceneLoaded;
         public Action OnSceneCleared;
@@ -15,9 +15,23 @@ namespace IRIS.SceneLoader
         private List<INetComponent> _serviceList = new();
         private Dictionary<string, GameObject> _simSceneDict = new();
         [SerializeField] private GameObject simScenePrefab;
+        [SerializeField] private SimMaterialResolver materialResolver;
 
         void Start()
         {
+            if (simScenePrefab == null)
+            {
+                Debug.LogError("SimScenePrefab is not assigned in SimSceneSpawner.");
+                return;
+            }
+            if (materialResolver == null)
+            {
+                Debug.LogError("MaterialResolver is not assigned in SimSceneSpawner.");
+            }
+            else
+            {
+                materialResolver.Initialize();
+            }
             _serviceList.Add(new IRISService<SimScene, string>("SpawnSimScene", SpawnSimScene));
             _serviceList.Add(new IRISService<string, string>("DeleteSimScene", DeleteSimScene));
         }
@@ -84,6 +98,12 @@ namespace IRIS.SceneLoader
                 return null;
             }
         }
+
+        public SimMaterialResolver GetMaterialResolver()
+        {
+            return materialResolver;
+        }
+
 
     }
 }
