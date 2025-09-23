@@ -34,18 +34,19 @@ namespace IRIS.SceneLoader
                 Debug.LogWarning($"Invalid color for {simVisual.name}, using default color.");
                 simMat.emissionColor = new List<float> { 1.0f, 1.0f, 1.0f, 1.0f };
             }
-            // Transparency
-            if (simMat.color[3] < 1)
-            {
-                mat.SetFloat("_Mode", 2);
-                mat.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
-                mat.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
-                mat.SetInt("_ZWrite", 0);
-                mat.DisableKeyword("_ALPHATEST_ON");
-                mat.EnableKeyword("_ALPHABLEND_ON");
-                mat.DisableKeyword("_ALPHAPREMULTIPLY_ON");
-                mat.renderQueue = -1;
-            }
+            // TODO: Transparency, rendering queue is not sure
+            // TODO: also need to be tested in the device
+            // if (simMat.color[3] < 1)
+            // {
+            //     mat.SetFloat("_Mode", 2);
+            //     mat.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
+            //     mat.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
+            //     mat.SetInt("_ZWrite", 0);
+            //     mat.DisableKeyword("_ALPHATEST_ON");
+            //     mat.EnableKeyword("_ALPHABLEND_ON");
+            //     mat.DisableKeyword("_ALPHAPREMULTIPLY_ON");
+            //     mat.renderQueue = -1;
+            // }
             // In URP, the set color function is using "_BaseColor" instead of "_Color"
             mat.SetColor("_BaseColor", new Color(simMat.color[0], simMat.color[1], simMat.color[2], simMat.color[3]));
             if (simMat.emissionColor != null)

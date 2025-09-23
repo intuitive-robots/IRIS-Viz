@@ -48,7 +48,7 @@ namespace IRIS.SceneLoader
                     _simSceneDict.Remove(simScene.name);
                 }
                 GameObject simSceneObj = Instantiate(simScenePrefab, gameObject.transform);
-                simSceneObj.name = simScene.name;
+                simSceneObj.GetComponent<SimSceneLoader>().InitializeServices(simScene.name);
                 _simSceneDict.Add(simScene.name, simSceneObj);
             });
             return IRISMSG.SUCCESS;

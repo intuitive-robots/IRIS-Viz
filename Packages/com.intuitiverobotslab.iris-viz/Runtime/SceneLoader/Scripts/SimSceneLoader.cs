@@ -18,9 +18,14 @@ namespace IRIS.SceneLoader
         private IRISService<string, SimVisual, byte[], byte[], string> createSimVisualService;
         private IRISService<string, string> subscribeRigidObjectsControllerService;
 
-        void Start()
+        void Awake()
         {
             materialResolver = SimSceneSpawner.Instance.GetMaterialResolver();
+        }
+
+        public void InitializeServices(string sceneName)
+        {
+            gameObject.name = sceneName;
             createSimObjectService = new IRISService<string, SimObject, string>($"{gameObject.name}/CreateSimObject", CreateSimObjectCb);
             createSimVisualService = new IRISService<string, SimVisual, byte[], byte[], string>($"{gameObject.name}/CreateVisual", CreateSimVisualCb);
             subscribeRigidObjectsControllerService = new IRISService<string, string>($"{gameObject.name}/SubscribeRigidObjectsController", SubscribeRigidObjectsControllerCb);

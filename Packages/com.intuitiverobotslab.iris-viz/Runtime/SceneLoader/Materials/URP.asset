@@ -12,6 +12,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d162acfc74e2e2df18bb466bc91cbaa1, type: 3}
   m_Name: URP
   m_EditorClassIdentifier: 
-  displayName: 
-  opaqueMaterial: {fileID: 0}
-  transparentMaterial: {fileID: 0}
+  displayName: UPR
+  opaqueMaterial: {fileID: 2100000, guid: 3a31435cb6eba2d488f380e6d5409476, type: 2}
+  transparentMaterial: {fileID: 2100000, guid: 6a2d1f950c48ee2bc8c8464a9657cc5b, type: 2}
