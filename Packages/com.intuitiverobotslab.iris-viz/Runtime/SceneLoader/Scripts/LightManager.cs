@@ -43,7 +43,7 @@ namespace IRIS.SceneLoader
                 lightObject.transform.LookAt(Vector3.zero);
 
                 // Parent the light object under this GameObject
-                lightObject.transform.parent = this.transform;
+                lightObject.transform.parent = transform;
             }
             Debug.Log("Directional lights created by LightManager.");
         }

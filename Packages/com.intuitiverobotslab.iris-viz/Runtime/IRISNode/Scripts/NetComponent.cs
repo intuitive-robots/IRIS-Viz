@@ -31,10 +31,11 @@ namespace IRIS.Node
 			_pubSocket.Bind($"tcp://0.0.0.0:{port}");
 			Port = NetworkUtils.GetNetZMQSocketPort(_pubSocket);
 			_XRNode._sockets.Add(_pubSocket);
-			if (!_XRNode.localInfo.topicDict.ContainsKey(_topic))
-			{
-				_XRNode.localInfo.topicDict[_topic] = Port;
-			}
+			// if (!_XRNode.localInfo.topicDict.ContainsKey(_topic))
+			// {
+			// 	_XRNode.localInfo.topicDict[_topic] = Port;
+			// }
+			_XRNode.localInfo.AddTopic(_topic, Port);
 			onEncodeMsg = MsgUtils.CreateEncoderProcessor<MsgType>();
 			Debug.Log($"Publisher for topic {_topic} is created");
 		}
@@ -59,6 +60,15 @@ namespace IRIS.Node
 				Debug.LogWarning($"Publish failed: Unexpected error occurred. Error: {ex.Message}");
 			}
 		}
+
+		public void Close()
+		{
+			IRISXRNode _XRNode = IRISXRNode.Instance;
+			_XRNode.localInfo.RemoveTopic(_topic);
+			_pubSocket.Close();
+			Debug.Log($"Publisher for topic {_topic} is closed");
+		}
+
 
 	}
 
@@ -141,11 +151,12 @@ namespace IRIS.Node
 		{
 			IRISXRNode netManager = IRISXRNode.Instance;
 			Name = serviceName;
-			if (netManager.localInfo.serviceList.Contains(Name))
-			{
-				throw new ArgumentException($"Service {Name} is already registered");
-			}
-			netManager.localInfo.serviceList.Add(Name);
+			// if (netManager.localInfo.serviceList.Contains(Name))
+			// {
+			// 	throw new ArgumentException($"Service {Name} is already registered");
+			// }
+			// netManager.localInfo.serviceList.Add(Name);
+			netManager.localInfo.AddService(Name);
 			netManager.serviceCallbacks[Name] = BytesCallback;
 			Debug.Log($"Service {Name} is registered");
 		}
@@ -160,16 +171,19 @@ namespace IRIS.Node
 		{
 			IRISXRNode netManager = IRISXRNode.Instance;
 
-			if (netManager.localInfo.serviceList.Contains(Name))
-			{
-				netManager.localInfo.serviceList.Remove(Name);
-				netManager.serviceCallbacks.Remove(Name);
-				Debug.Log($"Service {Name} is unregistered");
-			}
-			else
-			{
-				Debug.LogWarning($"Service {Name} is not registered");
-			}
+			// if (netManager.localInfo.serviceList.Contains(Name))
+			// {
+			// 	netManager.localInfo.serviceList.Remove(Name);
+			// 	netManager.serviceCallbacks.Remove(Name);
+			// 	Debug.Log($"Service {Name} is unregistered");
+			// }
+			// else
+			// {
+			// 	Debug.LogWarning($"Service {Name} is not registered");
+			// }
+			netManager.localInfo.RemoveService(Name);
+			netManager.serviceCallbacks.Remove(Name);
+			Debug.Log($"Service {Name} is unregistered");
 		}
 
 

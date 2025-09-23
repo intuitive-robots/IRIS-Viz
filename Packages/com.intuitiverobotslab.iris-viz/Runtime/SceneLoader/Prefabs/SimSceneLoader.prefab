@@ -47,8 +47,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1805d787826392283aa3c4d2fc1911f6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  defaultMaterial: {fileID: 2100000, guid: 3a31435cb6eba2d488f380e6d5409476, type: 2}
-  sceneAxis: {fileID: 8155111389663965605}
+  materialResolver: {fileID: 11400000, guid: d227515756115c644af86f0816fc658d, type: 2}
 --- !u!114 &3230328525617688078
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -137,10 +136,5 @@ PrefabInstance:
 --- !u!4 &8152646073439715499 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 4001612315231318, guid: d3f436728a834c94eb3d882d0dabd410, type: 3}
-  m_PrefabInstance: {fileID: 8154386258753193213}
-  m_PrefabAsset: {fileID: 0}
---- !u!1 &8155111389663965605 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 1958783570294104, guid: d3f436728a834c94eb3d882d0dabd410, type: 3}
   m_PrefabInstance: {fileID: 8154386258753193213}
   m_PrefabAsset: {fileID: 0}
