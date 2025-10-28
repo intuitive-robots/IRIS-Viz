@@ -1,0 +1,110 @@
+// Produces packed float3 Positions (+ float4 Colors) for VFX Graph.
+// Flips exactly as the previous pipeline:
+//   - _FlipPosX/_FlipPosY applied in camera space BEFORE cull/pose
+//   - _FlipRgbX/_FlipRgbY applied on texture sampling
+//   - No Z flip.
+// One global append counter across ALL cameras per frame.
+
+#pragma kernel CSMain
+#pragma target 5.0
+
+// ---------- Inputs ----------
+StructuredBuffer<uint> depthBuffer; // ushort payload, uploaded as uint from C#
+
+// ---------- Outputs ----------
+RWStructuredBuffer<float3> Positions; // 12B stride to match VFX sampling
+RWStructuredBuffer<float4> Colors;
+
+// ---------- Counters ----------
+RWStructuredBuffer<uint> _ValidCount; // incremented when depth != 0
+RWStructuredBuffer<uint> _VisibleCount; // incremented after all culls
+
+// ---------- Uniforms ----------
+Texture2D<float4> _ColorTex;
+
+uint _Width, _Height;
+float _Fx, _Fy, _Cx, _Cy; // intrinsics (pixels). If 0, fallback below.
+float _Scale; // visual/world scale applied AFTER culling
+float _CullMinZ, _CullMaxZ; // METERS
+float _CullX, _CullY; // camera-space ROI half-extents in METERS (0 disables)
+float4x4 _PoseMatrix; // sensor -> world
+float4x4 _VP; // camera VP for optional frustum test
+int _UseColorTex; // 1 if _ColorTex is bound
+int _DoFrustum; // 1 = perform frustum test; 0 = skip
+
+// EXACT same flip uniforms as the old pipeline
+int _FlipPosX, _FlipPosY; // geometry flips (camera coords)
+int _FlipRgbX, _FlipRgbY; // RGB sampling flips (texture coords)
+
+// 8x8 threads per group
+[numthreads(8, 8, 1)]
+void CSMain(uint3 id : SV_DispatchThreadID)
+{
+    if (id.x >= _Width || id.y >= _Height)
+        return;
+
+    uint u = id.x;
+    uint v = id.y;
+    uint idx = v * _Width + u;
+
+    // ---- Read depth (ushort) and convert to meters ----
+    uint raw = depthBuffer[idx];
+    if (raw == 0)
+        return; // invalid depth
+    InterlockedAdd(_ValidCount[0], 1);
+    float z_m = (float) raw * 0.001; // mm -> meters
+
+    // ---- Intrinsics with fallback ----
+    float fx = (_Fx > 1e-6) ? _Fx : (float) _Width;
+    float fy = (_Fy > 1e-6) ? _Fy : (float) _Height;
+    float cx = (_Cx != 0.0) ? _Cx : (float) _Width * 0.5;
+    float cy = (_Cy != 0.0) ? _Cy : (float) _Height * 0.5;
+
+    // ---- Camera-space coords (meters) ----
+    float x = ((float) u - cx) / fx * z_m;
+    float y = ((float) v - cy) / fy * z_m;
+
+    // EXACT: geometry flips here (camera space, before cull/pose)
+    if (_FlipPosX != 0)
+        x = -x;
+    if (_FlipPosY != 0)
+        y = -y;
+
+    // 1) Depth Z cull (meters)
+    if (z_m < _CullMinZ || z_m > _CullMaxZ)
+        return;
+
+    // 2) XY ROI (camera space meters)
+    if ((_CullX > 0.0 || _CullY > 0.0) && (abs(x) > _CullX || abs(y) > _CullY))
+        return;
+
+    // 3) Sensor -> world
+    float4 world = mul(_PoseMatrix, float4(x, y, z_m, 1.0));
+
+    // 4) Optional frustum test
+    if (_DoFrustum != 0)
+    {
+        float4 clip = mul(_VP, world);
+        if (clip.w <= 0)
+            return;
+        if (abs(clip.x) > clip.w || abs(clip.y) > clip.w || clip.z < -clip.w || clip.z > clip.w)
+            return;
+    }
+
+    // 5) Append visible
+    uint outIdx;
+    InterlockedAdd(_VisibleCount[0], 1, outIdx);
+
+    float3 wpos = world.xyz * _Scale;
+    Positions[outIdx] = wpos;
+
+    // 6) Color (optional) with EXACT image flips
+    float4 c = float4(1, 1, 1, 1);
+    if (_UseColorTex != 0)
+    {
+        uint su = (_FlipRgbX != 0) ? (_Width - 1 - u) : u;
+        uint sv = (_FlipRgbY != 0) ? (_Height - 1 - v) : v;
+        c = _ColorTex.Load(int3(su, sv, 0)); // integer texel coords, mip=0
+    }
+    Colors[outIdx] = c;
+}
