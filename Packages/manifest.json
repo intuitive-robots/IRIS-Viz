@@ -1,6 +1,7 @@
 {
   "dependencies": {
     "com.github-glitchenzo.nugetforunity": "https://github.com/GlitchEnzo/NuGetForUnity.git?path=/src/NuGetForUnity",
+    "com.meta.xr.sdk.all": "78.0.0",
     "com.unity.ai.navigation": "2.0.5",
     "com.unity.collab-proxy": "2.7.1",
     "com.unity.ide.rider": "3.0.31",
@@ -15,6 +16,7 @@
     "com.unity.ugui": "2.0.0",
     "com.unity.visualeffectgraph": "17.0.3",
     "com.unity.visualscripting": "1.9.5",
+    "com.unity.xr.meta-openxr": "2.3.0",
     "com.unity.modules.accessibility": "1.0.0",
     "com.unity.modules.ai": "1.0.0",
     "com.unity.modules.androidjni": "1.0.0",
