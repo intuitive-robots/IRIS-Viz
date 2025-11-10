@@ -303,4 +303,9 @@ public class MultiCamPointCloudRenderer : MonoBehaviour
         if (tmpDepthU16 == null || tmpDepthU16.Length < count) tmpDepthU16 = new ushort[count];
         if (tmpDepthU32 == null || tmpDepthU32.Length < count) tmpDepthU32 = new uint[count];
     }
+    public int RenderedPointCountDebug
+    {
+    get { return _lastVisibleForVFX; }
+    }
+
 }
