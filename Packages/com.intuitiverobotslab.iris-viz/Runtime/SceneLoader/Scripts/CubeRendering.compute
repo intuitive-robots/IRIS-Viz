@@ -26,11 +26,11 @@ uint _Width, _Height;
 float _Fx, _Fy, _Cx, _Cy; // intrinsics (pixels). If 0, fallback below.
 float _Scale; // visual/world scale applied AFTER culling
 float _CullMinZ, _CullMaxZ; // METERS
-float _CullX, _CullY; // camera-space ROI half-extents in METERS (0 disables)
+float _CullX, _CullY; // camera-space ROI half-extents in METERS
 float4x4 _PoseMatrix; // sensor -> world
 float4x4 _VP; // camera VP for optional frustum test
 int _UseColorTex; // 1 if _ColorTex is bound
-int _DoFrustum; // 1 = perform frustum test; 0 = skip
+int _DoFrustum; // 1 = perform frustum test;
 
 // EXACT same flip uniforms as the old pipeline
 int _FlipPosX, _FlipPosY; // geometry flips (camera coords)
