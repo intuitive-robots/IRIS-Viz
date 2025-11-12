@@ -2,17 +2,11 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net;
-using System.Net.Sockets;
 using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
 using UnityEngine;
 
-using IRIS.Node;        // IRISXRNode, UnityMainThreadDispatcher
-using IRIS.Utilities;  // Subscriber<T>, UnityPortSet, MsgUtils, NodeInfo
-using NetMQ;
-using NetMQ.Sockets;
+using IRIS.Node;        // IRISXRNode, IRISService<Req,Resp>
+using IRIS.Utilities;  // Subscriber<T>
 
 [Serializable]
 public struct MultiFramePacket
@@ -34,23 +28,17 @@ public struct MultiFramePacket
         depthBytes.Length >= width * height * 2;
 }
 
+[Serializable]
+public struct SubscribePointCloudStreamRequest
+{
+    public int camId;     // e.g., 1
+    public string topic;  // e.g., "RGBD/Cam1"
+    public string url;    // e.g., "tcp://10.0.0.5:56423"
+}
+
 public class MultiZmqFrameReceiver : MonoBehaviour
 {
-    [Header("Topics")]
-    [Tooltip("Prefix used by Streamer.py topics, e.g. 'RGBD/Cam' -> 'RGBD/Cam1'")]
-    public string topicPrefix = "RGBD/Cam";
-
-    [Tooltip("Camera IDs to subscribe to (topics = prefix + id)")]
-    public int[] cameraIds = new[] { 1 };
-
-    [Header("Discovery")]
-    [Tooltip("Use IRIS multicast + GetNodeInfo to auto-wire SimPublisher topics")]
-    public bool autoDiscoverSimPublisher = true;
-
-    [Header("Debug Logging")]
-    [Tooltip("Log discovery beacons and NodeInfo results")]
-    public bool logDiscovery = false;
-
+    [Header("Logging")]
     [Tooltip("Log when (re)subscribing to topics")]
     public bool logSubscribe = true;
 
@@ -64,14 +52,14 @@ public class MultiZmqFrameReceiver : MonoBehaviour
     {
         public Subscriber<byte[]> sub;
         public string url;
+        public string topic;
     }
 
     // camId -> subscriber info
     private readonly Dictionary<int, SubEntry> _subs = new();
 
-    // Discovery
-    private UdpClient _mcClient;
-    private CancellationTokenSource _discCts;
+    // IRIS service handle so we can unregister on destroy
+    private IRISService<SubscribePointCloudStreamRequest, string> _subscribeSvc;
 
     // PacketV2 constants (must match Python PacketV2Writer)
     private const uint MAGIC = 0xABCD1234;
@@ -87,189 +75,68 @@ public class MultiZmqFrameReceiver : MonoBehaviour
             return;
         }
 
-        if (cameraIds == null || cameraIds.Length == 0)
-            cameraIds = new[] { 1 };
-
-        if (autoDiscoverSimPublisher)
-        {
-            StartDiscovery();
-        }
-        else if (logDiscovery)
-        {
-            Debug.Log("[MultiZmqFrameReceiver] Auto-discovery disabled; expecting manual wiring.");
-        }
+        // Register IRIS service: SimPublisher calls this with {camId, topic, url}
+        _subscribeSvc = new IRISService<SubscribePointCloudStreamRequest, string>(
+            "SubscribePointCloudStream",
+            HandleSubscribePointCloudStream
+        );
     }
 
     private void OnDestroy()
     {
-        StopDiscovery();
+        try { _subscribeSvc?.Unregister(); } catch { }
 
         foreach (var kv in _subs)
         {
-            try { kv.Value.sub.Unsubscribe(); } catch { }
+            try { kv.Value.sub?.Unsubscribe(); } catch { }
+            // NOTE: IRIS.Utilities.Subscriber<T> has no Dispose(); Unsubscribe() is sufficient.
         }
 
         _subs.Clear();
         _latest.Clear();
     }
 
-    // =================== Discovery ===================
+    // =================== IRIS Service handler ===================
 
-    private void StartDiscovery()
+    private string HandleSubscribePointCloudStream(SubscribePointCloudStreamRequest req)
     {
-        if (_discCts != null)
-            return;
-
-        _discCts = new CancellationTokenSource();
-        var token = _discCts.Token;
-
-        Task.Run(async () =>
+        if (req.camId <= 0 || string.IsNullOrEmpty(req.topic) || string.IsNullOrEmpty(req.url))
         {
-            try
-            {
-                _mcClient = new UdpClient();
-                _mcClient.Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
-                _mcClient.Client.Bind(new IPEndPoint(IPAddress.Any, UnityPortSet.DISCOVERY));
-                _mcClient.JoinMulticastGroup(IPAddress.Parse("239.255.10.10"));
-
-                if (logDiscovery)
-                    Debug.Log("[MultiZmqFrameReceiver] Listening on 239.255.10.10:7720 for IRIS nodes...");
-
-                while (!token.IsCancellationRequested)
-                {
-                    var recvTask = _mcClient.ReceiveAsync();
-                    var completed = await Task.WhenAny(recvTask, Task.Delay(1000, token));
-                    if (completed != recvTask)
-                        continue; // timeout / check cancel
-
-                    var result = recvTask.Result;
-                    string remoteIP = result.RemoteEndPoint.Address.ToString();
-                    string s = Encoding.UTF8.GetString(result.Buffer);
-
-                    // IRIS beacon: nodeID(36) + nodeInfoID(36) + servicePort(ascii)
-                    if (s.Length < 72)
-                        continue;
-
-                    if (!int.TryParse(s.Substring(72), out int servicePort))
-                        continue;
-
-                    if (logDiscovery)
-                        Debug.Log($"[MultiZmqFrameReceiver] Beacon from {remoteIP}:{servicePort}");
-
-                    TryFetchNodeInfoAndWire(remoteIP, servicePort);
-                }
-            }
-            catch (ObjectDisposedException)
-            {
-                // Normal during shutdown
-            }
-            catch (Exception e)
-            {
-                if (logDiscovery)
-                    Debug.LogWarning($"[MultiZmqFrameReceiver] Discovery error: {e.Message}");
-            }
-        }, token);
-    }
-
-    private void StopDiscovery()
-    {
-        if (_discCts == null)
-            return;
-
-        _discCts.Cancel();
-
-        try
-        {
-            _mcClient?.DropMulticastGroup(IPAddress.Parse("239.255.10.10"));
+            Debug.LogWarning("[MultiZmqFrameReceiver] SubscribePointCloudStream: bad request");
+            return "bad-request";
         }
-        catch { }
 
-        try
-        {
-            _mcClient?.Close();
-        }
-        catch { }
-
-        _mcClient = null;
-
-        _discCts.Dispose();
-        _discCts = null;
+        RegisterStream(req.camId, req.url, req.topic);
+        return "ok";
     }
 
-    private void TryFetchNodeInfoAndWire(string remoteIP, int servicePort)
-    {
-        Task.Run(() =>
-        {
-            string svcUrl = $"tcp://{remoteIP}:{servicePort}";
+    // =================== Public API (used by renderer) ===================
 
-            try
-            {
-                using (var req = new RequestSocket())
-                {
-                    req.Connect(svcUrl);
+    public bool TryGetLatest(int camId, out MultiFramePacket pkt)
+        => _latest.TryGetValue(camId, out pkt);
 
-                    // IRIS service: ["GetNodeInfo", <payload>]
-                    var msg = new NetMQMessage();
-                    msg.Append("GetNodeInfo");
-                    msg.Append(MsgUtils.String2Bytes("")); // empty payload
-                    req.SendMultipartMessage(msg);
+    public int[] ActiveCameraIds()
+        => _latest.Keys.OrderBy(k => k).ToArray();
 
-                    if (!req.TryReceiveFrameBytes(TimeSpan.FromMilliseconds(1000), out var data) ||
-                        data == null || data.Length == 0)
-                    {
-                        if (logDiscovery)
-                            Debug.LogWarning($"[MultiZmqFrameReceiver] GetNodeInfo timeout from {svcUrl}");
-                        return;
-                    }
+    public List<MultiFramePacket> SnapshotAll()
+        => _latest.Values.OrderBy(v => v.camId).ToList();
 
-                    NodeInfo ni;
-                    try
-                    {
-                        ni = MsgUtils.BytesDeserialize2Object<NodeInfo>(data);
-                    }
-                    catch (Exception ex)
-                    {
-                        if (logDiscovery)
-                            Debug.LogWarning($"[MultiZmqFrameReceiver] Invalid NodeInfo from {svcUrl}: {ex.Message}");
-                        return;
-                    }
+    // Optional: manual wiring from another script/Inspector
+    public void RegisterStream(int camId, string url, string topic)
+        => EnsureSubscribed(camId, topic, url);
 
-                    if (ni.topicDict == null || ni.topicDict.Count == 0)
-                        return;
-
-                    // For each camera we care about, wire if topic exists
-                    foreach (int camId in cameraIds)
-                    {
-                        string topic = $"{topicPrefix}{camId}";
-                        if (!ni.topicDict.TryGetValue(topic, out int topicPort))
-                            continue;
-
-                        string url = $"tcp://{remoteIP}:{topicPort}";
-
-                        UnityMainThreadDispatcher.Instance.Enqueue(() =>
-                        {
-                            EnsureSubscribed(camId, topic, url);
-                        });
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                if (logDiscovery)
-                    Debug.LogWarning($"[MultiZmqFrameReceiver] GetNodeInfo failed from {svcUrl}: {ex.Message}");
-            }
-        });
-    }
+    // =================== ZMQ SUB management ===================
 
     private void EnsureSubscribed(int camId, string topic, string url)
     {
         if (_subs.TryGetValue(camId, out var existing))
         {
-            if (existing.url == url)
+            // Already correct?
+            if (existing.url == url && existing.topic == topic)
                 return;
 
-            // Port changed (e.g. sender restarted) → clean up and rewire
-            try { existing.sub.Unsubscribe(); } catch { }
+            // Sender restarted / port or topic changed → clean up and rewire
+            try { existing.sub?.Unsubscribe(); } catch { }
             _subs.Remove(camId);
         }
 
@@ -279,7 +146,7 @@ public class MultiZmqFrameReceiver : MonoBehaviour
         );
 
         sub.StartSubscription(url, topic);
-        _subs[camId] = new SubEntry { sub = sub, url = url };
+        _subs[camId] = new SubEntry { sub = sub, url = url, topic = topic };
 
         if (logSubscribe)
             Debug.Log($"[MultiZmqFrameReceiver] Cam{camId}: {topic} @ {url}");
@@ -318,22 +185,11 @@ public class MultiZmqFrameReceiver : MonoBehaviour
         {
             Debug.Log(
                 $"[MultiZmqFrameReceiver] Cam{pkt.camId} {pkt.width}x{pkt.height} " +
-                $"rgb={pkt.rgbBytes?.Length ?? 0} depth={pkt.depthBytes?.Length ?? 0} " +
+                $"rgb={(pkt.rgbBytes?.Length ?? 0)} depth={(pkt.depthBytes?.Length ?? 0)} " +
                 $"intr={pkt.hasIntr} pose={pkt.hasPose}"
             );
         }
     }
-
-    // =================== Public API ===================
-
-    public bool TryGetLatest(int camId, out MultiFramePacket pkt)
-        => _latest.TryGetValue(camId, out pkt);
-
-    public int[] ActiveCameraIds()
-        => _latest.Keys.OrderBy(k => k).ToArray();
-
-    public List<MultiFramePacket> SnapshotAll()
-        => _latest.Values.OrderBy(v => v.camId).ToList();
 
     // =================== PacketV2 parsing ===================
 
@@ -377,7 +233,7 @@ public class MultiZmqFrameReceiver : MonoBehaviour
                 o += 16;
             }
 
-            // RGB
+            // RGB + Depth
             if (msg.Length < o + rgbLen + depthLen)
                 return false;
 
@@ -389,7 +245,6 @@ public class MultiZmqFrameReceiver : MonoBehaviour
                 o += rgbLen;
             }
 
-            // Depth
             byte[] depth = null;
             if (depthLen > 0)
             {
