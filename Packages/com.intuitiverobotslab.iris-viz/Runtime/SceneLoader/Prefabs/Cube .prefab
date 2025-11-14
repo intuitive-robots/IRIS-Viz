@@ -43,6 +43,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 5546458135206562656}
+  - component: {fileID: 2677407424460745505}
   m_Layer: 0
   m_Name: Network
   m_TagString: Untagged
@@ -65,6 +66,20 @@ Transform:
   m_Children: []
   m_Father: {fileID: 3275378589342973200}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &2677407424460745505
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1562872327185116832}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d4508d8c98b26f041af36f4fe1d490e9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  logSubscribe: 1
+  logPackets: 0
 --- !u!1 &2407296292502743935
 GameObject:
   m_ObjectHideFlags: 0
@@ -109,12 +124,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0625d3935ed74b548a92631f6ffc1471, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  receiver: {fileID: 0}
+  receiver: {fileID: 2677407424460745505}
   pointCloudCompute: {fileID: 7200000, guid: b542f7342ec07fd4c94ae57d48480189, type: 3}
   kernelName: CSMain
   vfx: {fileID: 126901386780239955}
-  pointSizeWorld: 0.01
-  vfxCapacity: 2000000
+  pointSizeWorld: 0.03
+  vfxCapacity: 300000
   scale: 1
   cullMin: 0.1
   cullMax: 8
@@ -125,7 +140,7 @@ MonoBehaviour:
   flipPosY: 1
   flipRgbX: 0
   flipRgbY: 1
-  usePacketPosesIfPresent: 0
+  usePacketPosesIfPresent: 1
 --- !u!1 &3313007832647104602
 GameObject:
   m_ObjectHideFlags: 0
@@ -243,7 +258,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 3313007832647104602}
-  m_Enabled: 0
+  m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 1805d787826392283aa3c4d2fc1911f6, type: 3}
   m_Name: 
