@@ -128,7 +128,7 @@ MonoBehaviour:
   pointCloudCompute: {fileID: 7200000, guid: b542f7342ec07fd4c94ae57d48480189, type: 3}
   kernelName: CSMain
   vfx: {fileID: 126901386780239955}
-  pointSizeWorld: 0.03
+  pointSizeWorld: 0.0065
   vfxCapacity: 300000
   scale: 1
   cullMin: 0.1

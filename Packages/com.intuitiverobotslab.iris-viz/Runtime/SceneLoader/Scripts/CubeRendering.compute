@@ -9,34 +9,32 @@
 #pragma target 5.0
 
 // ---------- Inputs ----------
-StructuredBuffer<uint> depthBuffer; // ushort payload, uploaded as uint from C#
+StructuredBuffer<uint> depthBuffer; 
 
 // ---------- Outputs ----------
-RWStructuredBuffer<float3> Positions; // 12B stride to match VFX sampling
+RWStructuredBuffer<float3> Positions; 
 RWStructuredBuffer<float4> Colors;
 
 // ---------- Counters ----------
-RWStructuredBuffer<uint> _ValidCount; // incremented when depth != 0
-RWStructuredBuffer<uint> _VisibleCount; // incremented after all culls
+RWStructuredBuffer<uint> _ValidCount; 
+RWStructuredBuffer<uint> _VisibleCount; 
 
-// ---------- Uniforms ----------
 Texture2D<float4> _ColorTex;
 
 uint _Width, _Height;
-float _Fx, _Fy, _Cx, _Cy; // intrinsics (pixels). If 0, fallback below.
-float _Scale; // visual/world scale applied AFTER culling
-float _CullMinZ, _CullMaxZ; // METERS
-float _CullX, _CullY; // camera-space ROI half-extents in METERS
-float4x4 _PoseMatrix; // sensor -> world
-float4x4 _VP; // camera VP for optional frustum test
-int _UseColorTex; // 1 if _ColorTex is bound
-int _DoFrustum; // 1 = perform frustum test;
+float _Fx, _Fy, _Cx, _Cy; 
+float _Scale; 
+float _CullMinZ, _CullMaxZ; 
+float _CullX, _CullY; 
+float4x4 _PoseMatrix; 
+float4x4 _VP; 
+int _UseColorTex; 
+int _DoFrustum; 
 
-// EXACT same flip uniforms as the old pipeline
-int _FlipPosX, _FlipPosY; // geometry flips (camera coords)
-int _FlipRgbX, _FlipRgbY; // RGB sampling flips (texture coords)
+// Axis flips
+int _FlipPosX, _FlipPosY;
+int _FlipRgbX, _FlipRgbY;
 
-// 8x8 threads per group
 [numthreads(8, 8, 1)]
 void CSMain(uint3 id : SV_DispatchThreadID)
 {
@@ -50,7 +48,7 @@ void CSMain(uint3 id : SV_DispatchThreadID)
     // ---- Read depth (ushort) and convert to meters ----
     uint raw = depthBuffer[idx];
     if (raw == 0)
-        return; // invalid depth
+        return;
     InterlockedAdd(_ValidCount[0], 1);
     float z_m = (float) raw * 0.001; // mm -> meters
 
@@ -64,7 +62,6 @@ void CSMain(uint3 id : SV_DispatchThreadID)
     float x = ((float) u - cx) / fx * z_m;
     float y = ((float) v - cy) / fy * z_m;
 
-    // EXACT: geometry flips here (camera space, before cull/pose)
     if (_FlipPosX != 0)
         x = -x;
     if (_FlipPosY != 0)
@@ -81,7 +78,7 @@ void CSMain(uint3 id : SV_DispatchThreadID)
     // 3) Sensor -> world
     float4 world = mul(_PoseMatrix, float4(x, y, z_m, 1.0));
 
-    // 4) Optional frustum test
+    // 4) frustum test
     if (_DoFrustum != 0)
     {
         float4 clip = mul(_VP, world);
@@ -98,13 +95,13 @@ void CSMain(uint3 id : SV_DispatchThreadID)
     float3 wpos = world.xyz * _Scale;
     Positions[outIdx] = wpos;
 
-    // 6) Color (optional) with EXACT image flips
+    // 6) Color with EXACT image flips
     float4 c = float4(1, 1, 1, 1);
     if (_UseColorTex != 0)
     {
         uint su = (_FlipRgbX != 0) ? (_Width - 1 - u) : u;
         uint sv = (_FlipRgbY != 0) ? (_Height - 1 - v) : v;
-        c = _ColorTex.Load(int3(su, sv, 0)); // integer texel coords, mip=0
+        c = _ColorTex.Load(int3(su, sv, 0));
     }
     Colors[outIdx] = c;
 }
