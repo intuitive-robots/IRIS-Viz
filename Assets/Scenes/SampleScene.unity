@@ -316,7 +316,7 @@ PrefabInstance:
     - target: {fileID: 3203194774513815821, guid: de2495710546adb4bb1d60e91b7db0d1, type: 3}
       propertyPath: simScenePrefab
       value: 
-      objectReference: {fileID: 3313007832647104602, guid: 60d08c5330475354899b06f8cbf4f4b3, type: 3}
+      objectReference: {fileID: 8490656635545507148, guid: e4626d7c47d87e94ab3b238d3594041b, type: 3}
     - target: {fileID: 3203194774513815821, guid: de2495710546adb4bb1d60e91b7db0d1, type: 3}
       propertyPath: materialResolver
       value: 
