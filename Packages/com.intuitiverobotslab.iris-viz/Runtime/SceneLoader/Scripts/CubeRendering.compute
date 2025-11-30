@@ -38,7 +38,7 @@ int _FlipRgbX, _FlipRgbY;
 [numthreads(8, 8, 1)]
 void CSMain(uint3 id : SV_DispatchThreadID)
 {
-    if (id.x >= _Width || id.y >= _Height)
+    if (id.x >= _Width || id.y >= _Height) 
         return;
 
     uint u = id.x;

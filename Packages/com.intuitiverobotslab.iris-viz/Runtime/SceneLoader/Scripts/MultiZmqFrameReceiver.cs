@@ -45,6 +45,9 @@ public class MultiZmqFrameReceiver : MonoBehaviour
     [Tooltip("Log every received/parsed packet (verbose)")]
     public bool logPackets = false;
 
+    [SerializeField] private GameObject objectToActivate;
+    private bool _pendingActivate = false;
+
     // camId -> latest decoded packet
     private readonly ConcurrentDictionary<int, MultiFramePacket> _latest = new();
 
@@ -107,7 +110,22 @@ public class MultiZmqFrameReceiver : MonoBehaviour
         }
 
         RegisterStream(req.camId, req.url, req.topic);
+        _pendingActivate = true;
         return "ok";
+    }
+
+    private void Update()
+    {
+        if (!_pendingActivate)
+            return;
+
+        // Clear the flag first to avoid repeated activation
+        _pendingActivate = false;
+
+        if (objectToActivate != null && !objectToActivate.activeSelf)
+        {
+            objectToActivate.SetActive(true);
+        }
     }
 
     // =================== Public API (used by renderer) ===================
