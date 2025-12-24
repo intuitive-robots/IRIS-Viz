@@ -2,7 +2,8 @@
     "name": "IntuitivoRobotsLab.IRIS-Viz.SceneLoader",
     "rootNamespace": "",
     "references": [
-        "IntuitivoRobotsLab.IRIS-Viz.IRISNode"
+        "IntuitivoRobotsLab.IRIS-Viz.IRISNode",
+        "Unity.TextMeshPro"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

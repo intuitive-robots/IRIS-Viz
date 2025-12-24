@@ -145,7 +145,7 @@ AudioListener:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 330585543}
-  m_Enabled: 1
+  m_Enabled: 0
 --- !u!20 &330585545
 Camera:
   m_ObjectHideFlags: 0
@@ -256,6 +256,26 @@ MonoBehaviour:
     m_MipBias: 0
     m_VarianceClampScale: 0.9
     m_ContrastAdaptiveSharpening: 0
+--- !u!1 &664628721 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 5416606952447211905, guid: de2495710546adb4bb1d60e91b7db0d1, type: 3}
+  m_PrefabInstance: {fileID: 5868478775607048197}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &664628727
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 664628721}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d4508d8c98b26f041af36f4fe1d490e9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  logSubscribe: 1
+  logPackets: 0
+  objectToActivate: {fileID: 0}
 --- !u!1 &832575517
 GameObject:
   m_ObjectHideFlags: 0
@@ -314,6 +334,10 @@ PrefabInstance:
     m_TransformParent: {fileID: 0}
     m_Modifications:
     - target: {fileID: 3203194774513815821, guid: de2495710546adb4bb1d60e91b7db0d1, type: 3}
+      propertyPath: simScenePrefab
+      value: 
+      objectReference: {fileID: 8490656635545507148, guid: e4626d7c47d87e94ab3b238d3594041b, type: 3}
+    - target: {fileID: 3203194774513815821, guid: de2495710546adb4bb1d60e91b7db0d1, type: 3}
       propertyPath: materialResolver
       value: 
       objectReference: {fileID: 11400000, guid: d227515756115c644af86f0816fc658d, type: 2}
@@ -364,7 +388,10 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 5416606952447211905, guid: de2495710546adb4bb1d60e91b7db0d1, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 664628727}
   m_SourcePrefab: {fileID: 100100000, guid: de2495710546adb4bb1d60e91b7db0d1, type: 3}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
