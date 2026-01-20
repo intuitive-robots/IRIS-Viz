@@ -169,13 +169,14 @@ namespace IRIS.SceneLoader
 
         public void BuildMesh(SimMesh simMesh, GameObject visualObj, byte[] meshBytes)
         {
+            _ = meshBytes;
             MeshFilter meshFilter = visualObj.GetComponent<MeshFilter>();
             meshFilter.mesh = new Mesh
             {
-                vertices = DecodeArray<Vector3>(meshBytes, simMesh.verticesLayout[0], simMesh.verticesLayout[1]),
-                normals = DecodeArray<Vector3>(meshBytes, simMesh.normalsLayout[0], simMesh.normalsLayout[1]),
-                triangles = DecodeArray<int>(meshBytes, simMesh.indicesLayout[0], simMesh.indicesLayout[1]),
-                uv = DecodeArray<Vector2>(meshBytes, simMesh.uvLayout[0], simMesh.uvLayout[1])
+                vertices = DecodeArray<Vector3>(simMesh.vertices, 0, simMesh.vertices.Length),
+                normals = DecodeArray<Vector3>(simMesh.normals, 0, simMesh.normals.Length),
+                triangles = DecodeArray<int>(simMesh.indices, 0, simMesh.indices.Length),
+                uv = DecodeArray<Vector2>(simMesh.uv, 0, simMesh.uv.Length)
             };
         }
 
