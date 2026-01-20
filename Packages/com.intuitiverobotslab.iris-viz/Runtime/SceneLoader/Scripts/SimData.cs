@@ -16,12 +16,8 @@ namespace IRIS.SceneLoader
         [Key(2)]
         public float[] scale;
 
-        // Ignore these methods during serialization
-        [IgnoreMember]
         public Vector3 GetPos() => new Vector3(-pos[1], pos[2], pos[0]);
-        [IgnoreMember]
         public Quaternion GetRot() => new Quaternion(rot[2], -rot[3], -rot[1], rot[0]);
-        [IgnoreMember]
         public Vector3 GetScale() => new Vector3(scale[1], scale[2], scale[0]);
     }
 
@@ -103,4 +99,14 @@ namespace IRIS.SceneLoader
         [Key(5)]
         public byte[] textureData;
     }
+
+    [MessagePackObject]
+    public class SimScene
+    {
+        [Key(0)]
+        public SimObject root;
+        [Key(1)]
+        public string name;
+    }
+
 }

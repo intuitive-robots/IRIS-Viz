@@ -11,7 +11,7 @@ namespace IRIS.Node
     public class LogStreamer : MonoBehaviour
     {
         private Publisher<string> _logPublisher;
-        private IRISService<string, string> _toggleService;
+        // private IRISService<string, string> _toggleService;
 
         [Header("Configuration")]
         [SerializeField] private float testLogInterval = 1.0f;
@@ -34,7 +34,7 @@ namespace IRIS.Node
             Application.logMessageReceived += HandleLog;
 
             // Register service to allow remote control of logging
-            _toggleService = new IRISService<string, string>("ToggleConsoleLogger", OnToggleServiceRequest);
+            // _toggleService = new IRISService<string, string>("ToggleConsoleLogger", OnToggleServiceRequest);
 
             // Initialize timers using real-time to be independent of Time.timeScale
             _nextTestLogTime = Time.realtimeSinceStartup + testLogInterval;
@@ -121,7 +121,7 @@ namespace IRIS.Node
         {
             // Crucial: Unsubscribe to prevent memory leaks and NullReferenceExceptions
             Application.logMessageReceived -= HandleLog;
-            _toggleService?.Unregister();
+            // _toggleService?.Close();
             
             // Note: Publisher cleanup should be handled within its own Dispose logic
         }

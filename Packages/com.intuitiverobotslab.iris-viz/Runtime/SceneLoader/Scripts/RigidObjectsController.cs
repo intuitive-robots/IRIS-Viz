@@ -14,24 +14,18 @@ namespace IRIS.SceneLoader
     {
         public Dictionary<string, Transform> _objectsTrans;
         private Transform _trans;
-        private Subscriber<StreamMessage> _subscriber;
-
-        void Start()
-        {
-            _subscriber = new Subscriber<StreamMessage>("RigidObjectUpdate", SubscribeCallback);
-        }
 
         public void StartSubscription(string url)
         {
+            IRISXRNode.Instance.SubscriberManager.RegisterSubscriptionCallback<StreamMessage>("RigidObjectUpdate", SubscribeCallback, url);
             _trans = gameObject.transform;
             _objectsTrans = gameObject.GetComponent<SimSceneLoader>().GetObjectsTrans();
             // timeOffset = IRISXRNode.Instance.TimeOffset;
-            _subscriber.StartSubscription(url);
         }
 
         public void StopSubscription()
         {
-            _subscriber.Unsubscribe();
+            IRISXRNode.Instance.SubscriberManager.Unsubscribe("RigidObjectUpdate");
         }
 
         public void SubscribeCallback(StreamMessage streamMsg)

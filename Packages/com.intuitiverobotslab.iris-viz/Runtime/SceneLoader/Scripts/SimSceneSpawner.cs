@@ -12,7 +12,7 @@ namespace IRIS.SceneLoader
         public Action OnSceneLoaded;
         public Action OnSceneCleared;
         // Services
-        private List<INetComponent> _serviceList = new();
+        // private List<INetComponent> _serviceList = new();
         private Dictionary<string, GameObject> _simSceneDict = new();
         [SerializeField] private GameObject simScenePrefab;
         [SerializeField] private SimMaterialResolver materialResolver;
@@ -32,8 +32,8 @@ namespace IRIS.SceneLoader
             {
                 materialResolver.Initialize();
             }
-            _serviceList.Add(new IRISService<SimScene, string>("SpawnSimScene", SpawnSimScene));
-            _serviceList.Add(new IRISService<string, string>("DeleteSimScene", DeleteSimScene));
+            IRISXRNode.Instance.ServiceManager.RegisterServiceCallback<SimScene, string>("SpawnSimScene", SpawnSimScene);
+            IRISXRNode.Instance.ServiceManager.RegisterServiceCallback<string, string>("DeleteSimScene", DeleteSimScene);
         }
 
         private string SpawnSimScene(SimScene simScene)

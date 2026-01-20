@@ -56,12 +56,12 @@
         "temp/": true,
         "Temp/": true
     },
-    "dotnet.defaultSolution": "IRIS-Viz.sln",
+    "dotnet.defaultSolution": "IRIS-Viz.slnx",
     "cSpell.words": [
         "IRISMSG",
         "IRISXR"
     ],
     "[csharp]": {
         "editor.defaultFormatter": "ms-dotnettools.csharp"
-    },
+    }
 }

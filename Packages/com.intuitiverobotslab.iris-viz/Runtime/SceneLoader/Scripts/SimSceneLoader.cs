@@ -13,10 +13,6 @@ namespace IRIS.SceneLoader
         private SimMaterialResolver materialResolver;
         private Dictionary<string, GameObject> _simObjectDict = new();
         private Dictionary<string, Transform> _simObjTransDict = new();
-        // SceneLoader services
-        private IRISService<string, SimObject, string> createSimObjectService;
-        private IRISService<string, SimVisual, byte[], byte[], string> createSimVisualService;
-        private IRISService<string, string> subscribeRigidObjectsControllerService;
 
         void Awake()
         {
@@ -26,9 +22,8 @@ namespace IRIS.SceneLoader
         public void InitializeServices(string sceneName)
         {
             gameObject.name = sceneName;
-            createSimObjectService = new IRISService<string, SimObject, string>($"{gameObject.name}/CreateSimObject", CreateSimObjectCb);
-            createSimVisualService = new IRISService<string, SimVisual, byte[], byte[], string>($"{gameObject.name}/CreateVisual", CreateSimVisualCb);
-            subscribeRigidObjectsControllerService = new IRISService<string, string>($"{gameObject.name}/SubscribeRigidObjectsController", SubscribeRigidObjectsControllerCb);
+            IRISXRNode.Instance.ServiceManager.RegisterServiceCallback<SimObject, string>($"{gameObject.name}/CreateSimObject", CreateSimObjectCb);
+            IRISXRNode.Instance.ServiceManager.RegisterServiceCallback<string, string>($"{gameObject.name}/SubscribeRigidObjectsController", SubscribeRigidObjectsControllerCb);
         }
 
         static void ApplyTransform(Transform uTransform, IRISTransform simTrans)
@@ -54,11 +49,11 @@ namespace IRIS.SceneLoader
             _simObjTransDict.Add(simObject.name, simGameObject.transform);
         }
 
-        private string CreateSimObjectCb(string parentName, SimObject simObject)
+        private string CreateSimObjectCb(SimObject simObject)
         {
             UnityMainThreadDispatcher.Instance.Enqueue(() =>
             {
-                CreateSimObject(parentName, simObject);
+                CreateSimObject(null, simObject);
             });
             return IRISMSG.SUCCESS;
         }
@@ -99,9 +94,7 @@ namespace IRIS.SceneLoader
                     CreateSimObject(newSimGameObject.name, child);
                 }
             }
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
             Debug.Log($"Created SimObject: {simObject.name}");
-#endif
         }
 
         private string CreateSimVisualCb(string objName, SimVisual simVisual, byte[] meshBytes, byte[] textureBytes)
@@ -214,9 +207,8 @@ namespace IRIS.SceneLoader
 
         private void OnDestroy()
         {
-            createSimObjectService?.Unregister();
-            createSimVisualService?.Unregister();
-            subscribeRigidObjectsControllerService?.Unregister();
+            IRISXRNode.Instance.ServiceManager.UnregisterServiceCallback($"{gameObject.name}/CreateSimObject");
+            IRISXRNode.Instance.ServiceManager.UnregisterServiceCallback($"{gameObject.name}/SubscribeRigidObjectsController");
             _simObjectDict.Clear();
             _simObjTransDict.Clear();
             materialResolver?.Cleanup();

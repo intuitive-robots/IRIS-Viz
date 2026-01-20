@@ -1,6 +1,10 @@
 using NetMQ;
 using NetMQ.Sockets;
 using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using UnityEngine;
 using IRIS.Utilities;
 
@@ -8,410 +12,167 @@ using IRIS.Utilities;
 namespace IRIS.Node
 {
 
-	public interface INetComponent
+	using RawFrameHandler = Func<byte[][], byte[][]>;
+	public interface IService
 	{
-		string Name { get; set; }
-
-		void Unregister();
-
+		byte[][] BytesCallback(byte[][] bytes);
+		void Close();
 	}
 
-	public class Publisher<MsgType>
+
+
+	public class Service<RequestType, ResponseType> : IService
 	{
-		protected PublisherSocket _pubSocket;
-		protected string _topic;
-		private Func<MsgType, byte[]> onEncodeMsg;
-		public int Port { get; private set; }
+		public string Name { get; set; }
+		public readonly Func<RequestType, ResponseType> _onRequest;
 
-		public Publisher(string topic, int port = 0)
+		public Service(string serviceName, Func<RequestType, ResponseType> onRequest)
 		{
-			IRISXRNode _XRNode = IRISXRNode.Instance;
-			_topic = topic;
-			_pubSocket = new PublisherSocket();
-			_pubSocket.Bind($"tcp://0.0.0.0:{port}");
-			Port = NetworkUtils.GetNetZMQSocketPort(_pubSocket);
-			_XRNode._sockets.Add(_pubSocket);
-			// if (!_XRNode.localInfo.topicDict.ContainsKey(_topic))
-			// {
-			// 	_XRNode.localInfo.topicDict[_topic] = Port;
-			// }
-			_XRNode.localInfo.AddTopic(_topic, Port);
-			onEncodeMsg = MsgUtils.CreateEncoderProcessor<MsgType>();
-			Debug.Log($"Publisher for topic {_topic} is created");
+			Name = serviceName;
+			_onRequest = onRequest ?? throw new ArgumentNullException(nameof(onRequest));
 		}
 
-		public void Publish(MsgType data)
-		{
-			TryPublish(onEncodeMsg(data));
-		}
-
-		private void TryPublish(byte[] msg)
+		public byte[][] BytesCallback(byte[][] bytes)
 		{
 			try
 			{
-				_pubSocket.SendFrame(msg);
-			}
-			catch (TerminatingException ex)
-			{
-				Debug.LogWarning($"Publish failed: NetMQ context terminated. Error: {ex.Message}");
+				RequestType request = MsgUtils.Deserialize2Object<RequestType>(bytes[0]);
+				ResponseType response = _onRequest(request);
+				return new byte[][] { MsgUtils.Serialize2Bytes<ResponseType>(response) };
 			}
 			catch (Exception ex)
 			{
-				Debug.LogWarning($"Publish failed: Unexpected error occurred. Error: {ex.Message}");
+				Debug.LogWarning($"Error processing request for service {Name}: {ex.Message}\n{ex.StackTrace}");
+				return new byte[][] { HandleErrorResponse(ex) };
 			}
 		}
 
 		public void Close()
 		{
-			IRISXRNode _XRNode = IRISXRNode.Instance;
-			_XRNode.localInfo.RemoveTopic(_topic);
-			_pubSocket.Close();
-			Debug.Log($"Publisher for topic {_topic} is closed");
+			// No unmanaged resources to clean up in this implementation
 		}
 
-
-	}
-
-	public class Subscriber<MsgType>
-	{
-		protected string _topic;
-		protected SubscriberSocket _subSocket;
-		private Action<MsgType> _receiveAction;
-		private Func<byte[], MsgType> onProcessMsg;
-
-		public Subscriber(string topic, Action<MsgType> receiveAction)
-		{
-			_topic = topic;
-			_receiveAction = receiveAction;
-			_subSocket = new SubscriberSocket();
-			IRISXRNode _XRNode = IRISXRNode.Instance;
-			_XRNode._sockets.Add(_subSocket);
-
-		}
-
-		public void StartSubscription(string url, string topicName = null)
-		{
-			_subSocket.Connect(url);
-			if (topicName == null)
-			{
-				topicName = _topic;
-			}
-			_subSocket.Subscribe("");
-			IRISXRNode _XRNode = IRISXRNode.Instance;
-			onProcessMsg = MsgUtils.CreateDecoderProcessor<MsgType>();
-			_XRNode.SubscriptionSpin += SubscriptionSpin;
-			Debug.Log($"Subscribed to topic {_topic} at {url}");
-		}
-
-		public void OnReceive(byte[] byteMessage)
-		{
-			try
-			{
-				MsgType msg = onProcessMsg(byteMessage);
-				_receiveAction(msg);
-			}
-			catch (Exception ex)
-			{
-				Debug.LogWarning($"Error processing message for topic {_topic}: {ex.Message}");
-			}
-		}
-
-		public void Unsubscribe()
-		{
-			IRISXRNode _XRNode = IRISXRNode.Instance;
-			_XRNode.SubscriptionSpin -= SubscriptionSpin;
-		}
-
-		public void SubscriptionSpin()
-		{
-			byte[] latestMessage = null;
-			
-			// Keep reading until no more messages are available
-			while (_subSocket.TryReceiveFrameBytes(TimeSpan.Zero, out byte[] message))
-			{
-				latestMessage = message;
-			}
-			
-			// Process only the latest message if any were received
-			if (latestMessage != null)
-			{
-				OnReceive(latestMessage);
-			}
-		}
-	}
-
-	// Service class: Since it is running in the main thread, 
-	// so we don't need to destroy it
-
-	public abstract class IRISService : INetComponent
-	{
-		public string Name { get; set; }
-
-		public IRISService(string serviceName)
-		{
-			IRISXRNode netManager = IRISXRNode.Instance;
-			Name = serviceName;
-			// if (netManager.localInfo.serviceList.Contains(Name))
-			// {
-			// 	throw new ArgumentException($"Service {Name} is already registered");
-			// }
-			// netManager.localInfo.serviceList.Add(Name);
-			netManager.localInfo.AddService(Name);
-			netManager.serviceCallbacks[Name] = BytesCallback;
-			Debug.Log($"Service {Name} is registered");
-		}
-
-		public virtual byte[][] BytesCallback(byte[][] bytes)
-		{
-			throw new NotImplementedException("BytesCallback must be implemented in derived class");
-		}
-
-
-		public void Unregister()
-		{
-			IRISXRNode netManager = IRISXRNode.Instance;
-
-			// if (netManager.localInfo.serviceList.Contains(Name))
-			// {
-			// 	netManager.localInfo.serviceList.Remove(Name);
-			// 	netManager.serviceCallbacks.Remove(Name);
-			// 	Debug.Log($"Service {Name} is unregistered");
-			// }
-			// else
-			// {
-			// 	Debug.LogWarning($"Service {Name} is not registered");
-			// }
-			netManager.localInfo.RemoveService(Name);
-			netManager.serviceCallbacks.Remove(Name);
-			Debug.Log($"Service {Name} is unregistered");
-		}
-
-
-
-		public byte[] HandleErrorResponse(Exception ex)
+		private byte[] HandleErrorResponse(Exception ex)
 		{
 			string errorMessage = $"Error: {ex.Message}";
-			return MsgUtils.ObjectSerialize2Bytes((string)(object)errorMessage);
+			return MsgUtils.Serialize2Bytes((string)(object)errorMessage);
 		}
-
 	}
 
 
-	public class IRISService<RequestType, ResponseType> : IRISService
+
+	public class ServiceManager
 	{
-		public readonly Func<RequestType, ResponseType> _onRequest;
-		public Func<byte[], RequestType> ProcessRequestFunc;
-		public Func<ResponseType, byte[]> ProcessResponseFunc;
-
-		public IRISService(string serviceName, Func<RequestType, ResponseType> onRequest)
-			: base(serviceName) // Call base constructor with parameters
+		private readonly Dictionary<string, IService> _serviceDict = new();
+		private readonly Dictionary<string, RawFrameHandler> _serviceCallbacks = new();
+		private readonly ResponseSocket _responseSocket;
+		private int _port;
+		private Task serviceTask;
+		public ServiceManager(CancellationToken cancellationToken)
 		{
-			_onRequest = onRequest ?? throw new ArgumentNullException(nameof(onRequest));
-
-			// Use helper methods
-			ProcessRequestFunc = MsgUtils.CreateDecoderProcessor<RequestType>();
-			ProcessResponseFunc = MsgUtils.CreateEncoderProcessor<ResponseType>();
+			_responseSocket = new ResponseSocket();
+			_responseSocket.Bind("tcp://0.0.0.0:0");
+			_port = NetworkUtils.GetNetZMQSocketPort(_responseSocket);
+			serviceTask = Task.Run(() => StartServiceTask(cancellationToken));
+			Debug.Log($"Service initialized at port {_port}");
 		}
 
-		public override byte[][] BytesCallback(byte[][] bytes)
+		public void RegisterServiceCallback<RequestType, ResponseType>(string serviceName, Func<RequestType, ResponseType> callback)
 		{
-			try
+			if (string.IsNullOrEmpty(serviceName)) throw new ArgumentNullException(nameof(serviceName));
+			if (callback == null) throw new ArgumentNullException(nameof(callback));
+			_serviceDict[serviceName] = new Service<RequestType, ResponseType>(serviceName, callback);
+			_serviceCallbacks[serviceName] = _serviceDict[serviceName].BytesCallback;
+			IRISXRNode.Instance.localInfo.AddService(serviceName, _port);
+			Debug.Log($"Service {serviceName} is registered");
+		}
+
+		public void UnregisterServiceCallback(string serviceName)
+		{
+			if (string.IsNullOrEmpty(serviceName)) return;
+			if (!_serviceCallbacks.ContainsKey(serviceName)) return;
+			IRISXRNode.Instance.localInfo.RemoveService(serviceName);
+			_serviceCallbacks.Remove(serviceName);
+			_serviceDict.Remove(serviceName);
+			Debug.Log($"Service {serviceName} is unregistered");
+		}
+
+		public List<string> GetServiceList()
+		{
+			return _serviceCallbacks.Keys.ToList();
+		}
+
+		public void UnregisterAll()
+		{
+			foreach (var serviceName in _serviceCallbacks.Keys.ToList())
 			{
-				RequestType request = ProcessRequestFunc(bytes[0]);
-				ResponseType response = _onRequest(request);
-				return new byte[][] { ProcessResponseFunc(response) };
+				UnregisterServiceCallback(serviceName);
 			}
-			catch (Exception ex)
-			{
-				Debug.LogWarning($"Error processing request for service {Name}: {ex.Message}\n{ex.StackTrace}");
-				return new byte[][] { HandleErrorResponse(ex) };
-			}
+		}	
+
+
+		public void Close()
+		{
+			UnregisterAll();
+            // Wait for service task completion
+            try
+            {
+                serviceTask?.Wait();
+                Debug.Log("Service task completed successfully.");
+            }
+            catch (Exception e)
+            {
+                Debug.LogError($"Error waiting for service task completion: {e.Message}\n{e.StackTrace}");
+            }
+			_responseSocket.Close();
+			Debug.Log("ServiceManager is closed");
 		}
 
-	}
-
-
-	public class IRISService<RequestType1, RequestType2, ResponseType> : IRISService
-	{
-		public readonly Func<RequestType1, RequestType2, ResponseType> _onRequest;
-		public Func<byte[], RequestType1> ProcessRequest1Func;
-		public Func<byte[], RequestType2> ProcessRequest2Func;
-		public Func<ResponseType, byte[]> ProcessResponseFunc;
-
-		public IRISService(string serviceName, Func<RequestType1, RequestType2, ResponseType> onRequest)
-			: base(serviceName)
+		public void StartServiceTask(CancellationToken cancellationToken)
 		{
-			_onRequest = onRequest ?? throw new ArgumentNullException(nameof(onRequest));
-
-			// Use helper methods
-			ProcessRequest1Func = MsgUtils.CreateDecoderProcessor<RequestType1>();
-			ProcessRequest2Func = MsgUtils.CreateDecoderProcessor<RequestType2>();
-			ProcessResponseFunc = MsgUtils.CreateEncoderProcessor<ResponseType>();
-		}
-
-		public override byte[][] BytesCallback(byte[][] bytes)
-		{
-			try
+			while (!cancellationToken.IsCancellationRequested)
 			{
-				// Expecting exactly 2 byte arrays for the two request types
-				if (bytes.Length != 2)
+				if (!_responseSocket.HasIn) continue;
+				try
 				{
-					throw new ArgumentException("Expected 2 byte arrays for RequestType1 and RequestType2");
+					List<byte[]> messageReceived = _responseSocket.ReceiveMultipartBytes();
+					if (messageReceived.Count > 1)
+					{
+						string serviceName = MsgUtils.Bytes2String(messageReceived[0]);
+						if (_serviceCallbacks.ContainsKey(serviceName))
+						{
+							byte[][] response = _serviceCallbacks[serviceName](messageReceived.Skip(1).ToArray());
+							_responseSocket.SendMultipartBytes(response);
+						}
+						else
+						{
+							Debug.LogWarning($"Service {serviceName} not found");
+							_responseSocket.SendFrame(IRISMSG.NOTFOUND);
+						}
+					}
+					else
+					{
+						Debug.LogWarning("Received message does not contain service name or request data");
+						_responseSocket.SendFrame(IRISMSG.ERROR);
+					}
 				}
-
-				RequestType1 request1 = ProcessRequest1Func(bytes[0]);
-				RequestType2 request2 = ProcessRequest2Func(bytes[1]);
-				ResponseType response = _onRequest(request1, request2);
-				return new byte[][] { ProcessResponseFunc(response) };
-			}
-			catch (Exception ex)
-			{
-				Debug.LogWarning($"Error processing request for service {Name}: {ex.Message}\n{ex.StackTrace}");
-				return new byte[][] { HandleErrorResponse(ex) };
-			}
-		}
-	}
-
-
-	public class IRISService<RequestType1, RequestType2, RequestType3, ResponseType> : IRISService
-	{
-		public readonly Func<RequestType1, RequestType2, RequestType3, ResponseType> _onRequest;
-		public Func<byte[], RequestType1> ProcessRequest1Func;
-		public Func<byte[], RequestType2> ProcessRequest2Func;
-		public Func<byte[], RequestType3> ProcessRequest3Func;
-		public Func<ResponseType, byte[]> ProcessResponseFunc;
-
-		public IRISService(string serviceName, Func<RequestType1, RequestType2, RequestType3, ResponseType> onRequest)
-			: base(serviceName)
-		{
-			_onRequest = onRequest ?? throw new ArgumentNullException(nameof(onRequest));
-
-			// Use helper methods
-			ProcessRequest1Func = MsgUtils.CreateDecoderProcessor<RequestType1>();
-			ProcessRequest2Func = MsgUtils.CreateDecoderProcessor<RequestType2>();
-			ProcessRequest3Func = MsgUtils.CreateDecoderProcessor<RequestType3>();
-			ProcessResponseFunc = MsgUtils.CreateEncoderProcessor<ResponseType>();
-		}
-
-		public override byte[][] BytesCallback(byte[][] bytes)
-		{
-			try
-			{
-				// Expecting at least 3 byte arrays for the three request types
-				if (bytes.Length != 3)
+				catch (TimeoutException)
 				{
-					throw new ArgumentException("Expected 3 byte arrays for RequestType1, RequestType2, and RequestType3");
+					continue;
 				}
-				RequestType1 request1 = ProcessRequest1Func(bytes[0]);
-				RequestType2 request2 = ProcessRequest2Func(bytes[1]);
-				RequestType3 request3 = ProcessRequest3Func(bytes[2]);
-				ResponseType response = _onRequest(request1, request2, request3);
-				return new byte[][] { ProcessResponseFunc(response) };
-			}
-			catch (Exception ex)
-			{
-				Debug.LogWarning($"Error processing request for service {Name}: {ex.Message}\n{ex.StackTrace}");
-				return new byte[][] { HandleErrorResponse(ex) };
-			}
-		}
-
-	}
-
-	public class IRISService<RequestType1, RequestType2, RequestType3, RequestType4, ResponseType> : IRISService
-	{
-		public readonly Func<RequestType1, RequestType2, RequestType3, RequestType4, ResponseType> _onRequest;
-		public Func<byte[], RequestType1> ProcessRequest1Func;
-		public Func<byte[], RequestType2> ProcessRequest2Func;
-		public Func<byte[], RequestType3> ProcessRequest3Func;
-		public Func<byte[], RequestType4> ProcessRequest4Func;
-		public Func<ResponseType, byte[]> ProcessResponseFunc;
-
-		public IRISService(string serviceName, Func<RequestType1, RequestType2, RequestType3, RequestType4, ResponseType> onRequest)
-			: base(serviceName)
-		{
-			_onRequest = onRequest ?? throw new ArgumentNullException(nameof(onRequest));
-
-			// Use helper methods
-			ProcessRequest1Func = MsgUtils.CreateDecoderProcessor<RequestType1>();
-			ProcessRequest2Func = MsgUtils.CreateDecoderProcessor<RequestType2>();
-			ProcessRequest3Func = MsgUtils.CreateDecoderProcessor<RequestType3>();
-			ProcessRequest4Func = MsgUtils.CreateDecoderProcessor<RequestType4>();
-			ProcessResponseFunc = MsgUtils.CreateEncoderProcessor<ResponseType>();
-		}
-
-		public override byte[][] BytesCallback(byte[][] bytes)
-		{
-			try
-			{
-				// Expecting exactly 4 byte arrays for the four request types
-				if (bytes.Length != 4)
+				catch (OperationCanceledException)
 				{
-					throw new ArgumentException("Expected 4 byte arrays for RequestType1, RequestType2, RequestType3, and RequestType4");
+					Debug.Log("Service task was cancelled");
+					return;
 				}
-
-				RequestType1 request1 = ProcessRequest1Func(bytes[0]);
-				RequestType2 request2 = ProcessRequest2Func(bytes[1]);
-				RequestType3 request3 = ProcessRequest3Func(bytes[2]);
-				RequestType4 request4 = ProcessRequest4Func(bytes[3]);
-				ResponseType response = _onRequest(request1, request2, request3, request4);
-				return new byte[][] { ProcessResponseFunc(response) };
-			}
-			catch (Exception ex)
-			{
-				Debug.LogWarning($"Error processing request for service {Name}: {ex.Message}\n{ex.StackTrace}");
-				return new byte[][] { HandleErrorResponse(ex) };
-			}
-		}
-	}
-
-	public class IRISService<RequestType1, RequestType2, RequestType3, RequestType4, RequestType5, ResponseType> : IRISService
-	{
-		public readonly Func<RequestType1, RequestType2, RequestType3, RequestType4, RequestType5, ResponseType> _onRequest;
-		public Func<byte[], RequestType1> ProcessRequest1Func;
-		public Func<byte[], RequestType2> ProcessRequest2Func;
-		public Func<byte[], RequestType3> ProcessRequest3Func;
-		public Func<byte[], RequestType4> ProcessRequest4Func;
-		public Func<byte[], RequestType5> ProcessRequest5Func;
-		public Func<ResponseType, byte[]> ProcessResponseFunc;
-
-		public IRISService(string serviceName, Func<RequestType1, RequestType2, RequestType3, RequestType4, RequestType5, ResponseType> onRequest)
-			: base(serviceName)
-		{
-			_onRequest = onRequest ?? throw new ArgumentNullException(nameof(onRequest));
-			
-			// Use helper methods
-			ProcessRequest1Func = MsgUtils.CreateDecoderProcessor<RequestType1>();
-			ProcessRequest2Func = MsgUtils.CreateDecoderProcessor<RequestType2>();
-			ProcessRequest3Func = MsgUtils.CreateDecoderProcessor<RequestType3>();
-			ProcessRequest4Func = MsgUtils.CreateDecoderProcessor<RequestType4>();
-			ProcessRequest5Func = MsgUtils.CreateDecoderProcessor<RequestType5>();
-			ProcessResponseFunc = MsgUtils.CreateEncoderProcessor<ResponseType>();
-		}
-
-		public override byte[][] BytesCallback(byte[][] bytes)
-		{
-			try
-			{
-				// Expecting exactly 5 byte arrays for the five request types
-				if (bytes.Length != 5)
+				catch (Exception ex)
 				{
-					throw new ArgumentException("Expected 5 byte arrays for RequestType1, RequestType2, RequestType3, RequestType4, and RequestType5");
+					Debug.LogError($"Error receiving service request: {ex.Message}\n{ex.StackTrace}");
+					_responseSocket.SendFrame(IRISMSG.ERROR);
 				}
-				
-				RequestType1 request1 = ProcessRequest1Func(bytes[0]);
-				RequestType2 request2 = ProcessRequest2Func(bytes[1]);
-				RequestType3 request3 = ProcessRequest3Func(bytes[2]);
-				RequestType4 request4 = ProcessRequest4Func(bytes[3]);
-				RequestType5 request5 = ProcessRequest5Func(bytes[4]);
-				ResponseType response = _onRequest(request1, request2, request3, request4, request5);
-				return new byte[][] { ProcessResponseFunc(response) };
-			}
-			catch (Exception ex)
-			{
-				Debug.LogWarning($"Error processing request for service {Name}: {ex.Message}\n{ex.StackTrace}");
-				return new byte[][] { HandleErrorResponse(ex) };
 			}
 		}
 	}
+
 
 }

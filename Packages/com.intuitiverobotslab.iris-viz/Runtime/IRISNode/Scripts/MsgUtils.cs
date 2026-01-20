@@ -1,7 +1,7 @@
 using System;
 using System.IO;
 using System.Text;
-using Newtonsoft.Json;
+using MessagePack;
 
 namespace IRIS.Utilities
 {
@@ -62,86 +62,33 @@ namespace IRIS.Utilities
 			}
 		}
 
-		public static byte[] String2Bytes(string str)
+
+		// public static byte[] GenerateHeartbeat(NodeInfo nodeInfo)
+		// {
+		// 	byte[] serializedLocalInfo = Serialize2Bytes(nodeInfo);
+		// 	return ConcatenateByteArrays(EchoHeader.HEARTBEAT, serializedLocalInfo);
+		// }
+
+		
+		public static string Bytes2String(byte[] byteMessage)
 		{
-			return Encoding.UTF8.GetBytes(str);
+			return Encoding.UTF8.GetString(byteMessage);
 		}
 
-		public static string Bytes2String(byte[] bytes)
+		public static byte[] String2Bytes(string message)
 		{
-			return Encoding.UTF8.GetString(bytes);
-		}
-
-		public static byte[] GenerateHeartbeat(NodeInfo nodeInfo)
-		{
-			string serializedLocalInfo = JsonConvert.SerializeObject(nodeInfo);
-			return ConcatenateByteArrays(EchoHeader.HEARTBEAT, String2Bytes(serializedLocalInfo));
-		}
-
-		public static byte[] Serialize2Byte<T>(T data)
-		{
-			return String2Bytes(JsonConvert.SerializeObject(data));
-		}
-
-		public static T StringDeserialize2Object<T>(string jsonString)
-		{
-			return JsonConvert.DeserializeObject<T>(jsonString);
-		}
-
-		public static T BytesDeserialize2Object<T>(byte[] byteMessage)
-		{
-			string jsonString = Encoding.UTF8.GetString(byteMessage);
-			return JsonConvert.DeserializeObject<T>(jsonString);
-		}
-
-		public static byte[] ObjectSerialize2Bytes<T>(T data)
-		{
-			return String2Bytes(JsonConvert.SerializeObject(data));
+			return Encoding.UTF8.GetBytes(message);
 		}
 
 
-		// Helper method for response processing
-		public static Func<T, byte[]> CreateEncoderProcessor<T>()
+		public static byte[] Serialize2Bytes<ObjectType>(ObjectType message)
 		{
-			if (typeof(T) == typeof(string))
-			{
-				return response => MsgUtils.String2Bytes((string)(object)response);
-			}
-			else if (typeof(T) == typeof(byte[]))
-			{
-				return response => (byte[])(object)response;
-			}
-			else
-			{
-				return response => MsgUtils.ObjectSerialize2Bytes(response);
-			}
+			return MessagePackSerializer.Serialize<ObjectType>(message);
 		}
 
-		// Helper method for request processing
-		public static Func<byte[], T> CreateDecoderProcessor<T>()
-		{
-			if (typeof(T) == typeof(string))
-			{
-				return bytes => (T)(object)MsgUtils.Bytes2String(bytes);
-			}
-			else if (typeof(T) == typeof(byte[]))
-			{
-				return bytes => (T)(object)bytes;
-			}
-			else
-			{
-				return bytes => MsgUtils.BytesDeserialize2Object<T>(bytes);
-			}
-		}
-
-		public static string CombineHeaderWithMessage(string header, string message)
-		{
-			return $"{header}{SEPARATOR}{message}";
-		}
-
-		public static byte[] CombineHeaderWithMessage(string header, byte[] message)
-		{
-			return ConcatenateByteArrays(String2Bytes(header), Encoding.UTF8.GetBytes(SEPARATOR), message);
+		public static ObjectType Deserialize2Object<ObjectType>(byte[] byteMessage)
+		{	
+			return MessagePackSerializer.Deserialize<ObjectType>(byteMessage);
 		}
 
 	}

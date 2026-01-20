@@ -25,14 +25,14 @@ namespace IRIS.SceneLoader
                 return new Material(Shader.Find("Standard"));
             }
             Material mat = new Material(source);
-            if (simMat.color.Count == 3)
+            if (simMat.color.Length == 3)
             {
-                simMat.color.Add(1.0f);
+                simMat.color = new float[] { simMat.color[0], simMat.color[1], simMat.color[2], 1.0f };
             }
-            else if (simMat.color.Count != 4)
+            else if (simMat.color.Length != 4)
             {
                 Debug.LogWarning($"Invalid color for {simVisual.name}, using default color.");
-                simMat.emissionColor = new List<float> { 1.0f, 1.0f, 1.0f, 1.0f };
+                simMat.emissionColor = new float[] { 1.0f, 1.0f, 1.0f, 1.0f };
             }
             // TODO: Transparency, rendering queue is not sure
             // TODO: also need to be tested in the device
@@ -67,7 +67,7 @@ namespace IRIS.SceneLoader
                 return false;
             }
 
-            if (simMaterial.color.Count >= 4)
+            if (simMaterial.color.Length >= 4)
             {
                 return simMaterial.color[3] < 1f;
             }
