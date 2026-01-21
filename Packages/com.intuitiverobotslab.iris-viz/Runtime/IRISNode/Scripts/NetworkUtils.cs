@@ -86,7 +86,7 @@ namespace IRIS.Utilities
 		// public List<string> serviceList = new();
 		// public Dictionary<string, int> topicDict = new();
 
-		public LocalInfo(string nodeName, string nodeType, int servicePort)
+		public LocalInfo(string nodeName)
 		{
 			nodeInfo = new NodeInfo();
 			nodeInfo.Topics = new List<SocketInfo>();

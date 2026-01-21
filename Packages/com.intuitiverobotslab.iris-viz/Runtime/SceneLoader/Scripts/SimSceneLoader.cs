@@ -26,7 +26,7 @@ namespace IRIS.SceneLoader
             IRISXRNode.Instance.ServiceManager.RegisterServiceCallback<string, string>($"{gameObject.name}/SubscribeRigidObjectsController", SubscribeRigidObjectsControllerCb);
         }
 
-        static void ApplyTransform(Transform uTransform, IRISTransform simTrans)
+        static void ApplyTransform(Transform uTransform, SimTransform simTrans)
         {
             uTransform.localPosition = simTrans.GetPos();
             uTransform.localRotation = simTrans.GetRot();
@@ -55,7 +55,7 @@ namespace IRIS.SceneLoader
             {
                 CreateSimObject(null, simObject);
             });
-            return IRISMSG.SUCCESS;
+            return ResponseStatus.SUCCESS;
         }
 
         public void CreateSimObject(string parentName, SimObject simObject)
@@ -103,7 +103,7 @@ namespace IRIS.SceneLoader
             {
                 CreateSimVisual(objName, simVisual, meshBytes, textureBytes);
             });
-            return IRISMSG.SUCCESS;
+            return ResponseStatus.SUCCESS;
         }
 
 
@@ -191,7 +191,7 @@ namespace IRIS.SceneLoader
                 RigidObjectsController rigidObjectsController = GetComponent<RigidObjectsController>();
                 rigidObjectsController.StartSubscription(url);
             });
-            return IRISMSG.SUCCESS;
+            return ResponseStatus.SUCCESS;
         }
 
 

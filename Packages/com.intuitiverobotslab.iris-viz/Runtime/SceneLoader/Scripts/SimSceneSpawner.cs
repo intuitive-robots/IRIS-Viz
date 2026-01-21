@@ -32,8 +32,8 @@ namespace IRIS.SceneLoader
             {
                 materialResolver.Initialize();
             }
-            IRISXRNode.Instance.ServiceManager.RegisterServiceCallback<SimScene, string>("SpawnSimScene", SpawnSimScene);
             IRISXRNode.Instance.ServiceManager.RegisterServiceCallback<string, string>("DeleteSimScene", DeleteSimScene);
+            IRISXRNode.Instance.ServiceManager.RegisterServiceCallback<SimScene, string>("SpawnSimScene", SpawnSimScene);
         }
 
         private string SpawnSimScene(SimScene simScene)
@@ -51,7 +51,7 @@ namespace IRIS.SceneLoader
                 simSceneObj.GetComponent<SimSceneLoader>().InitializeServices(simScene.name);
                 _simSceneDict.Add(simScene.name, simSceneObj);
             });
-            return IRISMSG.SUCCESS;
+            return ResponseStatus.SUCCESS;
         }
 
         private string DeleteSimScene(string simSceneId)
@@ -66,12 +66,12 @@ namespace IRIS.SceneLoader
                     }
                     _simSceneDict.Remove(simSceneId);
                 });
-                return IRISMSG.SUCCESS;
+                return ResponseStatus.SUCCESS;
             }
             else
             {
-                Debug.LogWarning($"SimScene with id {simSceneId} does not exist.");
-                return IRISMSG.ERROR;
+                Debug.Log($"SimScene with id {simSceneId} does not exist, ignore it");
+                return "No Scene Found";
             }
         }
 

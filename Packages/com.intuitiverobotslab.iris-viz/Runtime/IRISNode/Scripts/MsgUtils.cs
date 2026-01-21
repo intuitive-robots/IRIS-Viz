@@ -13,40 +13,19 @@ namespace IRIS.Utilities
 		public static readonly byte[] NODES = new byte[] { 0x02 };
 	}
 
-	public static class IRISMSG
-	{
-		public static readonly string EMPTY = "EMPTY";
-		public static readonly string SUCCESS = "SUCCESS";
-		public static readonly string ERROR = "ERROR";
-		public static readonly string TIMEOUT = "TIMEOUT";
-		public static readonly string NOTFOUND = "NOTFOUND";
-		public static readonly string START = "START";
-		public static readonly string STOP = "STOP";
-	}
+    public static class ResponseStatus
+    {
+        public const string SUCCESS = "SUCCESS";
+        public const string NOSERVICE = "NOSERVICE";
+        public const string INVALID_RESPONSE = "INVALID_RESPONSE";
+        public const string SERVICE_FAIL = "SERVICE_FAIL";
+        public const string SERVICE_TIMEOUT = "SERVICE_TIMEOUT";
+        public const string INVALID_REQUEST = "INVALID_REQUEST";
+        public const string UNKNOWN_ERROR = "UNKNOWN_ERROR";
+    }
 
 	public static class MsgUtils
 	{
-
-		public const string SEPARATOR = "|";
-
-		public static byte[][] SplitByte(byte[] bytesMsg)
-		{
-			int separatorIndex = Array.IndexOf(bytesMsg, Encoding.UTF8.GetBytes(SEPARATOR)[0]);
-			if (separatorIndex == -1)
-			{
-				return new byte[][] { bytesMsg, null };
-			}
-			byte[] part1 = bytesMsg[..separatorIndex];
-			byte[] part2 = bytesMsg[(separatorIndex + 1)..];
-			return new byte[][] { part1, part2 };
-		}
-
-		public static string[] SplitByteToStr(byte[] bytesMsg)
-		{
-			byte[][] parts = SplitByte(bytesMsg);
-			return new string[] { Encoding.UTF8.GetString(parts[0]), Encoding.UTF8.GetString(parts[1]) };
-		}
-
 		public static byte[] ConcatenateByteArrays(params byte[][] arrays)
 		{
 			using (MemoryStream ms = new MemoryStream())

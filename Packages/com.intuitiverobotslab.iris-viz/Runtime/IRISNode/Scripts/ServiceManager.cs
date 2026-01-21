@@ -12,10 +12,10 @@ using IRIS.Utilities;
 namespace IRIS.Node
 {
 
-	using RawFrameHandler = Func<byte[][], byte[][]>;
+	using RawFrameHandler = Func<byte[], byte[]>;
 	public interface IService
 	{
-		byte[][] BytesCallback(byte[][] bytes);
+		byte[] BytesCallback(byte[] bytes);
 		void Close();
 	}
 
@@ -32,18 +32,18 @@ namespace IRIS.Node
 			_onRequest = onRequest ?? throw new ArgumentNullException(nameof(onRequest));
 		}
 
-		public byte[][] BytesCallback(byte[][] bytes)
+		public byte[] BytesCallback(byte[] bytes)
 		{
 			try
 			{
-				RequestType request = MsgUtils.Deserialize2Object<RequestType>(bytes[0]);
+				RequestType request = MsgUtils.Deserialize2Object<RequestType>(bytes);
 				ResponseType response = _onRequest(request);
-				return new byte[][] { MsgUtils.Serialize2Bytes<ResponseType>(response) };
+				return MsgUtils.Serialize2Bytes<ResponseType>(response);
 			}
 			catch (Exception ex)
 			{
 				Debug.LogWarning($"Error processing request for service {Name}: {ex.Message}\n{ex.StackTrace}");
-				return new byte[][] { HandleErrorResponse(ex) };
+				return MsgUtils.String2Bytes(ResponseStatus.SERVICE_FAIL);
 			}
 		}
 
@@ -55,7 +55,7 @@ namespace IRIS.Node
 		private byte[] HandleErrorResponse(Exception ex)
 		{
 			string errorMessage = $"Error: {ex.Message}";
-			return MsgUtils.Serialize2Bytes((string)(object)errorMessage);
+			return MsgUtils.String2Bytes(errorMessage);
 		}
 	}
 
@@ -66,30 +66,31 @@ namespace IRIS.Node
 		private readonly Dictionary<string, IService> _serviceDict = new();
 		private readonly Dictionary<string, RawFrameHandler> _serviceCallbacks = new();
 		private readonly ResponseSocket _responseSocket;
-		private int _port;
+		public int port { get; private set; }
 		private Task serviceTask;
 		public ServiceManager(CancellationToken cancellationToken)
 		{
 			_responseSocket = new ResponseSocket();
 			_responseSocket.Bind("tcp://0.0.0.0:0");
-			_port = NetworkUtils.GetNetZMQSocketPort(_responseSocket);
+			port = NetworkUtils.GetNetZMQSocketPort(_responseSocket);
 			serviceTask = Task.Run(() => StartServiceTask(cancellationToken));
-			Debug.Log($"Service initialized at port {_port}");
+			Debug.Log($"Service initialized at port {port}");
 		}
 
-		public void RegisterServiceCallback<RequestType, ResponseType>(string serviceName, Func<RequestType, ResponseType> callback)
+		public void RegisterServiceCallback<RequestType, ResponseType>(string serviceName, Func<RequestType, ResponseType> callback, bool useNameSpace = true)
 		{
-			if (string.IsNullOrEmpty(serviceName)) throw new ArgumentNullException(nameof(serviceName));
-			if (callback == null) throw new ArgumentNullException(nameof(callback));
+			if (useNameSpace)
+			{
+				serviceName = $"{IRISXRNode.Instance.localInfo.nodeInfo.Name}/{serviceName}";
+			}
 			_serviceDict[serviceName] = new Service<RequestType, ResponseType>(serviceName, callback);
 			_serviceCallbacks[serviceName] = _serviceDict[serviceName].BytesCallback;
-			IRISXRNode.Instance.localInfo.AddService(serviceName, _port);
+			IRISXRNode.Instance.localInfo.AddService(serviceName, port);
 			Debug.Log($"Service {serviceName} is registered");
 		}
 
 		public void UnregisterServiceCallback(string serviceName)
 		{
-			if (string.IsNullOrEmpty(serviceName)) return;
 			if (!_serviceCallbacks.ContainsKey(serviceName)) return;
 			IRISXRNode.Instance.localInfo.RemoveService(serviceName);
 			_serviceCallbacks.Remove(serviceName);
@@ -133,28 +134,33 @@ namespace IRIS.Node
 			while (!cancellationToken.IsCancellationRequested)
 			{
 				if (!_responseSocket.HasIn) continue;
+				byte[][] response = new byte[2][];
 				try
 				{
 					List<byte[]> messageReceived = _responseSocket.ReceiveMultipartBytes();
-					if (messageReceived.Count > 1)
+					if (messageReceived.Count == 2)
 					{
 						string serviceName = MsgUtils.Bytes2String(messageReceived[0]);
 						if (_serviceCallbacks.ContainsKey(serviceName))
 						{
-							byte[][] response = _serviceCallbacks[serviceName](messageReceived.Skip(1).ToArray());
-							_responseSocket.SendMultipartBytes(response);
+							response[0] = MsgUtils.String2Bytes(ResponseStatus.SUCCESS);
+							response[1] = _serviceCallbacks[serviceName](messageReceived[1]);
 						}
 						else
 						{
 							Debug.LogWarning($"Service {serviceName} not found");
-							_responseSocket.SendFrame(IRISMSG.NOTFOUND);
+							response[0] = MsgUtils.String2Bytes(ResponseStatus.NOSERVICE);
+							response[1] = MsgUtils.String2Bytes($"Service {serviceName} not found");
 						}
+						
 					}
 					else
 					{
 						Debug.LogWarning("Received message does not contain service name or request data");
-						_responseSocket.SendFrame(IRISMSG.ERROR);
+						response[0] = MsgUtils.String2Bytes(ResponseStatus.INVALID_REQUEST);
+						response[1] = MsgUtils.String2Bytes("Invalid request format");
 					}
+					_responseSocket.SendMultipartBytes(response);
 				}
 				catch (TimeoutException)
 				{
@@ -168,7 +174,13 @@ namespace IRIS.Node
 				catch (Exception ex)
 				{
 					Debug.LogError($"Error receiving service request: {ex.Message}\n{ex.StackTrace}");
-					_responseSocket.SendFrame(IRISMSG.ERROR);
+					response[0] = MsgUtils.String2Bytes(ResponseStatus.UNKNOWN_ERROR);
+					response[1] = MsgUtils.String2Bytes("Unknown error occurred");
+				}
+				finally
+				{
+					// Ensure the response is sent even in case of exceptions
+					_responseSocket.SendMultipartBytes(response);
 				}
 			}
 		}

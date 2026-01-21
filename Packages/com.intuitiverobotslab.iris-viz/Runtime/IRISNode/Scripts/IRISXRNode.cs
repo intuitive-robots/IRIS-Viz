@@ -16,6 +16,7 @@ namespace IRIS.Node
     {
 
         public LocalInfo localInfo { get; set; }
+        public string NodeName {get; private set; }
 
         [Header("Multicast Settings")]
         public string multicastAddress = "239.255.10.10";
@@ -40,25 +41,24 @@ namespace IRIS.Node
             NetMQConfig.Linger = TimeSpan.Zero;
             // Initialize local node info
             // Default host name
-            string nodeName = $"Unity-{Environment.MachineName}";
+            string NodeName = $"Unity-{Environment.MachineName}";
             if (PlayerPrefs.HasKey("HostName"))
             {
                 // The key exists, proceed to get the value
-                nodeName = PlayerPrefs.GetString("HostName");
-                Debug.Log($"Find Host Name: {nodeName}");
+                NodeName = PlayerPrefs.GetString("HostName");
+                Debug.Log($"Find Host Name: {NodeName}");
             }
             else
             {
-                Debug.Log($"Host Name not found, using default name {nodeName}");
+                Debug.Log($"Host Name not found, using default name {NodeName}");
             }
             // TODO: check the management of sockets
             // _sockets = new List<NetMQSocket>() { ServiceManager.ResponseSocket };
-            localInfo = new LocalInfo(nodeName, "UnityNode", 0);
-            Debug.Log("IRISXRNode started");
             // Initialize cancellation token
             cancellationTokenSource = new CancellationTokenSource();
             ServiceManager = new ServiceManager(cancellationTokenSource.Token);
             SubscriberManager = new SubscriberManager();
+            localInfo = new LocalInfo($"IRIS/Device/{NodeName}");
             InitializeDefaultServices();
             
             foreach (IPAddress ipAddress in NetworkUtils.GetNetworkInterfaces(true, true))
@@ -99,7 +99,6 @@ namespace IRIS.Node
                     client.Send(msgBytes, msgBytes.Length, remoteEndPoint);
                     // Wait for the specified interval or until cancellation is requested
                     await Task.Delay(TimeSpan.FromSeconds(messageSendInterval), cancellationToken);
-                    Debug.Log($"Multicast message sent from interface {ipAddress}");
                 }
             }
             catch (OperationCanceledException)
@@ -173,7 +172,7 @@ namespace IRIS.Node
                 Debug.Log($"Change Host Name to {localInfo.nodeInfo.Name}");
                 PlayerPrefs.Save();                
             });
-            return IRISMSG.SUCCESS;
+            return ResponseStatus.SUCCESS;
         }
 
         public List<string> GetServiceList(string req)

@@ -7,7 +7,7 @@ namespace IRIS.SceneLoader
     // Use [Key(int)] to define the index in the binary stream (efficient)
 
     [MessagePackObject]
-    public class IRISTransform
+    public class SimTransform
     {
         [Key(0)]
         public float[] pos; // Changed from List to Array for performance
@@ -33,7 +33,7 @@ namespace IRIS.SceneLoader
         [Key(3)]
         public SimMaterial material;
         [Key(4)]
-        public IRISTransform trans;
+        public SimTransform trans;
     }
 
     [MessagePackObject]
@@ -42,7 +42,7 @@ namespace IRIS.SceneLoader
         [Key(0)]
         public string name;
         [Key(1)]
-        public IRISTransform trans;
+        public SimTransform trans;
         [Key(2)]
         public SimVisual[] visuals;
         [Key(3)]
@@ -53,14 +53,12 @@ namespace IRIS.SceneLoader
     public class SimMesh
     {
         [Key(0)]
-        public string hash;
-        [Key(1)]
         public byte[] indices;
-        [Key(2)]
+        [Key(1)]
         public byte[] vertices;
-        [Key(3)]
+        [Key(2)]
         public byte[] normals;
-        [Key(4)]
+        [Key(3)]
         public byte[] uv;
     }
 
@@ -104,8 +102,6 @@ namespace IRIS.SceneLoader
     public class SimScene
     {
         [Key(0)]
-        public SimObject root;
-        [Key(1)]
         public string name;
     }
 
