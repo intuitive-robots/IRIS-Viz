@@ -57,11 +57,12 @@
         "Temp/": true
     },
     "dotnet.defaultSolution": "IRIS-Viz.slnx",
-    "cSpell.words": [
-        "IRISMSG",
-        "IRISXR"
-    ],
+    "dotnet.server.useOmnisharp": true,
+    "omnisharp.useModernNet": true,
+    "omnisharp.enableEditorConfigSupport": true,
     "[csharp]": {
         "editor.defaultFormatter": "ms-dotnettools.csharp"
-    }
+    },
+    "dotnet.completion.showCompletionItemsFromUnimportedNamespaces": true,
+    "dotnet.formatting.organizeImportsOnFormat": true
 }

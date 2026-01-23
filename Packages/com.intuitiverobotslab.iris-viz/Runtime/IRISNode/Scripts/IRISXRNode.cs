@@ -174,11 +174,5 @@ namespace IRIS.Node
             });
             return ResponseStatus.SUCCESS;
         }
-
-        public List<string> GetServiceList(string req)
-        {
-            return ServiceManager.GetServiceList();
-        }
-
     }
 }

@@ -1,51 +1,66 @@
 using UnityEngine;
+using IRIS.Utilities;
+using IRIS.Node;
 
 namespace IRIS.SceneLoader
 {
     public class LightManager : MonoBehaviour
     {
-        [Header("Light Settings")]
-        public float lightIntensity = 0.5f; // Intensity of each light
-        public float lightHeight = 10f; // Angle of the lights
-        public float lightOffset = 10f; // Range of the lights
-        public Color lightColor = Color.white; // Color of the lights
-
         private void Start()
         {
-            CreateLights();
+            IRISXRNode.Instance.ServiceManager.RegisterServiceCallback<LightConfig, string>($"{gameObject.name}/CreateLight", CreateLightsCb);
         }
 
-        private void CreateLights()
+        void OnDestroy()
         {
-            Vector3[] lightPositions = new Vector3[]
-                    {
-                        new Vector3(-lightOffset, lightHeight, -lightOffset),
-                        new Vector3(lightOffset, lightHeight, -lightOffset),
-                        new Vector3(-lightOffset, lightHeight, lightOffset),
-                        new Vector3(lightOffset, lightHeight, lightOffset)
-                    };
-            for (int i = 0; i < lightPositions.Length; i++)
+            IRISXRNode.Instance.ServiceManager.UnregisterServiceCallback($"{gameObject.name}/CreateLight");
+        }
+
+
+        private string CreateLightsCb(LightConfig sceneConfig)
+        {
+            UnityMainThreadDispatcher.Instance.Enqueue(() =>
             {
-                // Create a new GameObject for the light
-                GameObject lightObject = new GameObject($"DirectionalLight_{i + 1}");
+                CreateLights(sceneConfig);
+            });
+            return ResponseStatus.SUCCESS;
+        }
 
-                // Add a Light component
-                Light light = lightObject.AddComponent<Light>();
-                light.type = LightType.Directional;
-                light.intensity = lightIntensity;
-                light.color = lightColor;
-                light.shadows = LightShadows.None; // Disable shadows
+        private void CreateLights(LightConfig lightConfig)
+        {
+            GameObject lightGameObject = new GameObject(lightConfig.name);
+            Light lightComp = lightGameObject.AddComponent<Light>();
+            // Configure light based on provided config
+            lightComp.type = lightConfig.lightType.ToLower() switch
+            {
+                "directional" => LightType.Directional,
+                "point" => LightType.Point,
+                "spot" => LightType.Spot,
+                _ => LightType.Point
+            };
 
-                // Set position of the light
-                lightObject.transform.position = lightPositions[i];
+            lightComp.color = new Color(
+                lightConfig.color[0],
+                lightConfig.color[1],
+                lightConfig.color[2]
+            );
+            lightComp.intensity = lightConfig.intensity;
 
-                // Make the light aim at the origin
-                lightObject.transform.LookAt(Vector3.zero);
-
-                // Parent the light object under this GameObject
-                lightObject.transform.parent = transform;
+            lightGameObject.transform.position = new Vector3(
+                lightConfig.position[0],
+                lightConfig.position[1],
+                lightConfig.position[2]
+            );
+            lightGameObject.transform.LookAt(new Vector3(
+                lightConfig.direction[0],
+                lightConfig.direction[1],
+                lightConfig.direction[2]
+            ));
+            if (lightComp.type == LightType.Spot)
+            {
+                lightComp.spotAngle = lightConfig.spotAngle;
             }
-            Debug.Log("Directional lights created by LightManager.");
+            lightGameObject.transform.parent = gameObject.transform;
         }
     }
 }

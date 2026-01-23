@@ -1,13 +1,17 @@
 using System.Collections.Generic;
 using UnityEngine;
 using IRIS.Node;
-using System;
+using MessagePack;
 
 namespace IRIS.SceneLoader
 {
 
-    [Serializable]
-    public class StreamMessage : Dictionary<string, List<float>> { }
+[MessagePackObject]
+public class StreamMessage
+{
+    [Key("data")]
+    public Dictionary<string, List<float>> data;
+}
 
     [RequireComponent(typeof(SimSceneLoader))]
     public class RigidObjectsController : MonoBehaviour
@@ -17,20 +21,19 @@ namespace IRIS.SceneLoader
 
         public void StartSubscription(string url)
         {
-            IRISXRNode.Instance.SubscriberManager.RegisterSubscriptionCallback<StreamMessage>("RigidObjectUpdate", SubscribeCallback, url);
+            IRISXRNode.Instance.SubscriberManager.RegisterSubscriptionCallback<StreamMessage>($"{gameObject.name}/RigidObjectUpdate", SubscribeCallback, url);
             _trans = gameObject.transform;
             _objectsTrans = gameObject.GetComponent<SimSceneLoader>().GetObjectsTrans();
             // timeOffset = IRISXRNode.Instance.TimeOffset;
         }
 
-        public void StopSubscription()
-        {
-            IRISXRNode.Instance.SubscriberManager.Unsubscribe("RigidObjectUpdate");
+        private void OnDestroy() {
+            IRISXRNode.Instance.SubscriberManager.Unsubscribe($"{gameObject.name}/RigidObjectUpdate");
         }
 
         public void SubscribeCallback(StreamMessage streamMsg)
         {
-            foreach (var (name, value) in streamMsg)
+            foreach (var (name, value) in streamMsg.data)
             {
                 if (!_objectsTrans.ContainsKey(name))
                 {

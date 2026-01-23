@@ -9,100 +9,122 @@ namespace IRIS.SceneLoader
     [MessagePackObject]
     public class SimTransform
     {
-        [Key(0)]
+        [Key("pos")]
         public float[] pos; // Changed from List to Array for performance
-        [Key(1)]
+        [Key("rot")]
         public float[] rot;
-        [Key(2)]
+        [Key("scale")]
         public float[] scale;
 
-        public Vector3 GetPos() => new Vector3(-pos[1], pos[2], pos[0]);
-        public Quaternion GetRot() => new Quaternion(rot[2], -rot[3], -rot[1], rot[0]);
-        public Vector3 GetScale() => new Vector3(scale[1], scale[2], scale[0]);
+        public Vector3 GetPos() => new Vector3(pos[0], pos[1], pos[2]);
+        public Quaternion GetRot() => new Quaternion(rot[0], rot[1], rot[2], rot[3]);
+        public Vector3 GetScale() => new Vector3(scale[0], scale[1], scale[2]);
     }
 
     [MessagePackObject]
     public class SimVisual
     {
-        [Key(0)]
+        [Key("name")]
         public string name;
-        [Key(1)]
+
+        [Key("type")]
         public string type;
-        [Key(2)]
+
+        [Key("mesh")]
         public SimMesh mesh;
-        [Key(3)]
+
+        [Key("material")]
         public SimMaterial material;
-        [Key(4)]
+
+        [Key("trans")]
         public SimTransform trans;
     }
+
 
     [MessagePackObject]
     public class SimObject
     {
-        [Key(0)]
+        [Key("name")]
         public string name;
-        [Key(1)]
+        [Key("parent")]
+        public string parent;
+        [Key("trans")]
         public SimTransform trans;
-        [Key(2)]
+        [Key("visuals")]
         public SimVisual[] visuals;
-        [Key(3)]
-        public SimObject[] children;
     }
 
     [MessagePackObject]
     public class SimMesh
     {
-        [Key(0)]
+        [Key("indices")]
         public byte[] indices;
-        [Key(1)]
+        [Key("vertices")]
         public byte[] vertices;
-        [Key(2)]
+        [Key("normals")]
         public byte[] normals;
-        [Key(3)]
+        [Key("uv")]
         public byte[] uv;
     }
 
     [MessagePackObject]
     public class SimMaterial
     {
-        [Key(0)]
-        public string hash;
-        [Key(1)]
+        [Key("color")]
         public float[] color;
-        [Key(2)]
+        [Key("emissionColor")]
         public float[] emissionColor;
-        [Key(3)]
+        [Key("specular")]
         public float specular;
-        [Key(4)]
+        [Key("shininess")]
         public float shininess;
-        [Key(5)]
+        [Key("reflectance")]
         public float reflectance;
-        [Key(6)]
+        [Key("texture")]
         public SimTexture texture;
     }
 
     [MessagePackObject]
     public class SimTexture
     {
-        [Key(0)]
-        public string hash;
-        [Key(1)]
+        [Key("width")]
         public int width;
-        [Key(2)]
+        [Key("height")]
         public int height;
-        [Key(3)]
+        [Key("textureType")]
         public string textureType;
-        [Key(4)]
+        [Key("textureScale")]
         public float[] textureScale;
-        [Key(5)]
+        [Key("textureData")]
         public byte[] textureData;
     }
 
     [MessagePackObject]
-    public class SimScene
+    public class LightConfig
     {
-        [Key(0)]
+        [Key("name")] public string name;
+        [Key("lightType")] public string lightType;
+        [Key("color")] public float[] color;
+        [Key("intensity")] public float intensity;
+        [Key("position")] public float[] position;
+        [Key("direction")] public float[] direction;
+        [Key("range")] public float range;
+        [Key("spotAngle")] public float spotAngle;
+        [Key("shadowType")] public string shadowType;
+    }
+
+
+    [MessagePackObject]
+    public class SimSceneConfig
+    {
+        [Key("name")]
         public string name;
+        [Key("pos")]
+        public float[] pos;
+        [Key("rot")]
+        public float[] rot;
+        [Key("scale")]
+        public float[] scale;
     }
 
 }

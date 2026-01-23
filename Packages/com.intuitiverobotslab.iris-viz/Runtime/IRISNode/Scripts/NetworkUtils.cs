@@ -92,7 +92,7 @@ namespace IRIS.Utilities
 			nodeInfo.Topics = new List<SocketInfo>();
 			nodeInfo.Services = new List<SocketInfo>();
 			nodeInfo.NodeID = Guid.NewGuid().ToString();
-			nodeInfo.InfoID = Guid.NewGuid().GetHashCode();
+			nodeInfo.InfoID = 0;
 			nodeInfo.Name = nodeName;
 			nodeInfo.Ip = NetworkUtils.GetLocalIPsInSameSubnet("127.0.0.1");
 		}
@@ -117,6 +117,7 @@ namespace IRIS.Utilities
 				nodeInfo.Services.RemoveAll(s => s.Name == serviceName);
 			}
 			GenerateNewNodeInfoID();
+			Debug.LogWarning($"Service {serviceName} removed from LocalInfo.");
 		}
 
 
@@ -144,7 +145,7 @@ namespace IRIS.Utilities
 
 		private void GenerateNewNodeInfoID()
 		{
-			nodeInfo.InfoID = Guid.NewGuid().GetHashCode();
+			nodeInfo.InfoID += 1;
 		}
 
 		public void Rename(string newName)

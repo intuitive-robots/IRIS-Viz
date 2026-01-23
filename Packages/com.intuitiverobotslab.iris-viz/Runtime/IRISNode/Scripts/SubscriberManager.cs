@@ -6,7 +6,6 @@ using NetMQ;
 using NetMQ.Sockets;
 using IRIS.Utilities;
 
-
 namespace IRIS.Node
 {
 
@@ -29,9 +28,11 @@ namespace IRIS.Node
 			_url = url;
 			_receiveAction = receiveAction;
 			_subSocket = new SubscriberSocket();
-			_subSocket.Subscribe(_topic);
+			_subSocket.Subscribe("");
+			_subSocket.Connect(_url);
 			IRISXRNode.Instance.SubscriptionSpin += SubscriptionSpinTask;
 			IRISXRNode.Instance.sockets[_topic] = _subSocket;
+			Debug.Log($"Subscriber for topic {_topic} is created and connected to {_url}");
 		}
 
 		public void OnReceive(byte[] byteMessage)
@@ -83,6 +84,7 @@ namespace IRIS.Node
 			{
 				_subscribers[topic].Close();
 				_subscribers.Remove(topic);
+				Debug.LogWarning($"Unsubscribed from topic {topic}");
 			}
 		}
 

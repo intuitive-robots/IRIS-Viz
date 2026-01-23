@@ -38,7 +38,7 @@ namespace IRIS.Node
 			{
 				RequestType request = MsgUtils.Deserialize2Object<RequestType>(bytes);
 				ResponseType response = _onRequest(request);
-				return MsgUtils.Serialize2Bytes<ResponseType>(response);
+				return MsgUtils.Serialize2Bytes(response);
 			}
 			catch (Exception ex)
 			{
@@ -64,8 +64,8 @@ namespace IRIS.Node
 	public class ServiceManager
 	{
 		private readonly Dictionary<string, IService> _serviceDict = new();
-		private readonly Dictionary<string, RawFrameHandler> _serviceCallbacks = new();
 		private readonly ResponseSocket _responseSocket;
+		private readonly object _serviceLock = new object();
 		public int port { get; private set; }
 		private Task serviceTask;
 		public ServiceManager(CancellationToken cancellationToken)
@@ -83,33 +83,40 @@ namespace IRIS.Node
 			{
 				serviceName = $"{IRISXRNode.Instance.localInfo.nodeInfo.Name}/{serviceName}";
 			}
-			_serviceDict[serviceName] = new Service<RequestType, ResponseType>(serviceName, callback);
-			_serviceCallbacks[serviceName] = _serviceDict[serviceName].BytesCallback;
+			lock (_serviceLock)
+			{
+				_serviceDict[serviceName] = new Service<RequestType, ResponseType>(serviceName, callback);
+			}
 			IRISXRNode.Instance.localInfo.AddService(serviceName, port);
 			Debug.Log($"Service {serviceName} is registered");
 		}
 
-		public void UnregisterServiceCallback(string serviceName)
+		public void UnregisterServiceCallback(string serviceName, bool useNameSpace = true)
 		{
-			if (!_serviceCallbacks.ContainsKey(serviceName)) return;
+			if (useNameSpace)
+			{
+				serviceName = $"{IRISXRNode.Instance.localInfo.nodeInfo.Name}/{serviceName}";
+			}
+			if (!_serviceDict.ContainsKey(serviceName)) return;
 			IRISXRNode.Instance.localInfo.RemoveService(serviceName);
-			_serviceCallbacks.Remove(serviceName);
-			_serviceDict.Remove(serviceName);
-			Debug.Log($"Service {serviceName} is unregistered");
-		}
-
-		public List<string> GetServiceList()
-		{
-			return _serviceCallbacks.Keys.ToList();
+			lock (_serviceLock)
+			{
+				_serviceDict.Remove(serviceName);
+			}
+			Debug.LogWarning($"Service {serviceName} is unregistered");
 		}
 
 		public void UnregisterAll()
 		{
-			foreach (var serviceName in _serviceCallbacks.Keys.ToList())
+			lock (_serviceLock)
 			{
-				UnregisterServiceCallback(serviceName);
+				foreach (var serviceName in _serviceDict.Keys.ToList())
+				{
+					UnregisterServiceCallback(serviceName);
+				}
 			}
-		}	
+			Debug.Log("All services are unregistered");
+		}
 
 
 		public void Close()
@@ -137,14 +144,21 @@ namespace IRIS.Node
 				byte[][] response = new byte[2][];
 				try
 				{
-					List<byte[]> messageReceived = _responseSocket.ReceiveMultipartBytes();
-					if (messageReceived.Count == 2)
+					List<byte[]> requestReceived = _responseSocket.ReceiveMultipartBytes();
+					// Debug.Log($"Received {requestReceived.Count} frames in the request");
+					if (requestReceived.Count == 2)
 					{
-						string serviceName = MsgUtils.Bytes2String(messageReceived[0]);
-						if (_serviceCallbacks.ContainsKey(serviceName))
+						string serviceName = MsgUtils.Bytes2String(requestReceived[0]);
+						// Debug.Log($"Service requested: {serviceName}");
+						if (_serviceDict.ContainsKey(serviceName))
 						{
 							response[0] = MsgUtils.String2Bytes(ResponseStatus.SUCCESS);
-							response[1] = _serviceCallbacks[serviceName](messageReceived[1]);
+							IService service;
+							lock (_serviceLock)
+							{
+								service = _serviceDict[serviceName];
+							}
+							response[1] = service.BytesCallback(requestReceived[1]);
 						}
 						else
 						{
@@ -152,7 +166,6 @@ namespace IRIS.Node
 							response[0] = MsgUtils.String2Bytes(ResponseStatus.NOSERVICE);
 							response[1] = MsgUtils.String2Bytes($"Service {serviceName} not found");
 						}
-						
 					}
 					else
 					{
@@ -160,10 +173,10 @@ namespace IRIS.Node
 						response[0] = MsgUtils.String2Bytes(ResponseStatus.INVALID_REQUEST);
 						response[1] = MsgUtils.String2Bytes("Invalid request format");
 					}
-					_responseSocket.SendMultipartBytes(response);
 				}
 				catch (TimeoutException)
 				{
+					Debug.LogWarning("Service request timed out");
 					continue;
 				}
 				catch (OperationCanceledException)
