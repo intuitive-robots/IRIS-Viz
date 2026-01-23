@@ -33,16 +33,16 @@ namespace IRIS.Utilities
         protected string _anchorName;
         protected IRISAnchorData _data;
         protected bool isTrackingQR = false;
-        private IRISService<IRISAnchorData, string> applyOffsetService;
+        // private IRISService<IRISAnchorData, string> applyOffsetService;
 
         public void Initialize(string anchorName)
         {
             _anchorName = anchorName;
-            applyOffsetService = new IRISService<IRISAnchorData, string>($"{_anchorName}/ApplyOffset", (data) =>
-            {
-                ApplyOffset(data);
-                return IRISMSG.SUCCESS;
-            });
+            // applyOffsetService = new IRISService<IRISAnchorData, string>($"{_anchorName}/ApplyOffset", (data) =>
+            // {
+            //     ApplyOffset(data);
+            //     return IRISMSG.SUCCESS;
+            // });
         }
 
         protected void ApplyOffset(IRISAnchorData data)

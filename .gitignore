@@ -78,3 +78,5 @@ crashlytics-build.properties
 /Assets/NuGet.meta
 /Assets/Packages
 /Assets/Packages.meta
+
+IRIS-Viz_BurstDebugInformation_DoNotShip

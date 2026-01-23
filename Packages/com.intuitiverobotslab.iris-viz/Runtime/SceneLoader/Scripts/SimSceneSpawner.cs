@@ -1,8 +1,8 @@
 using System;
 using System.Collections.Generic;
-using UnityEngine;
 using IRIS.Node;
 using IRIS.Utilities;
+using UnityEngine;
 
 namespace IRIS.SceneLoader
 {
@@ -12,7 +12,7 @@ namespace IRIS.SceneLoader
         public Action OnSceneLoaded;
         public Action OnSceneCleared;
         // Services
-        private List<INetComponent> _serviceList = new();
+        // private List<INetComponent> _serviceList = new();
         private Dictionary<string, GameObject> _simSceneDict = new();
         [SerializeField] private GameObject simScenePrefab;
         [SerializeField] private SimMaterialResolver materialResolver;
@@ -32,26 +32,27 @@ namespace IRIS.SceneLoader
             {
                 materialResolver.Initialize();
             }
-            _serviceList.Add(new IRISService<SimScene, string>("SpawnSimScene", SpawnSimScene));
-            _serviceList.Add(new IRISService<string, string>("DeleteSimScene", DeleteSimScene));
+            IRISXRNode.Instance.ServiceManager.RegisterServiceCallback<string, string>("DeleteSimScene", DeleteSimScene);
+            IRISXRNode.Instance.ServiceManager.RegisterServiceCallback<SimSceneConfig, string>("SpawnSimScene", SpawnSimScene);
         }
 
-        private string SpawnSimScene(SimScene simScene)
+        private string SpawnSimScene(SimSceneConfig setting)
         {
             // make sure that the scene is loaded after this method is called
             UnityMainThreadDispatcher.Instance.EnqueueAndWait(() =>
             {
-                if (_simSceneDict.ContainsKey(simScene.name))
+                if (_simSceneDict.ContainsKey(setting.name))
                 {
-                    Debug.LogWarning($"SimScene with id {simScene.name} already exists, remove the existing scene.");
-                    Destroy(_simSceneDict[simScene.name]);
-                    _simSceneDict.Remove(simScene.name);
+                    Debug.LogWarning($"SimScene with id {setting.name} already exists, remove the existing scene.");
+                    Destroy(_simSceneDict[setting.name]);
+                    _simSceneDict.Remove(setting.name);
                 }
                 GameObject simSceneObj = Instantiate(simScenePrefab, gameObject.transform);
-                simSceneObj.GetComponent<SimSceneLoader>().InitializeServices(simScene.name);
-                _simSceneDict.Add(simScene.name, simSceneObj);
+                simSceneObj.name = setting.name;
+                simSceneObj.GetComponent<SimSceneLoader>().InitializeServices(setting.name);
+                _simSceneDict.Add(setting.name, simSceneObj);
             });
-            return IRISMSG.SUCCESS;
+            return ResponseStatus.SUCCESS;
         }
 
         private string DeleteSimScene(string simSceneId)
@@ -66,12 +67,12 @@ namespace IRIS.SceneLoader
                     }
                     _simSceneDict.Remove(simSceneId);
                 });
-                return IRISMSG.SUCCESS;
+                return ResponseStatus.SUCCESS;
             }
             else
             {
-                Debug.LogWarning($"SimScene with id {simSceneId} does not exist.");
-                return IRISMSG.ERROR;
+                Debug.Log($"SimScene with id {simSceneId} does not exist, ignore it");
+                return "No Scene Found";
             }
         }
 

@@ -3,100 +3,280 @@ using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;
 using System.Net.NetworkInformation;
+using System.Linq;
+using System.IO;
+using System.Text;
 using UnityEngine;
 using NetMQ;
+using MessagePack;
 
 namespace IRIS.Utilities
 {
 
-	public static class UnityPortSet
-	{
-		public static readonly int DISCOVERY = 7720;
-		public static readonly int HEARTBEAT = 7721;
-		public static readonly int SERVICE = 7730;
-		public static readonly int TOPIC = 7731;
-	}
+	// public static class UnityPortSet
+	// {
+	// 	public static readonly int DISCOVERY = 7720;
+	// 	public static readonly int HEARTBEAT = 7721;
+	// 	public static readonly int SERVICE = 7730;
+	// 	public static readonly int TOPIC = 7731;
+	// }
 
-	public class NodeAddress
+	// public class NodeAddress
+	// {
+	// 	public string ip;
+	// 	public int port;
+	// 	public NodeAddress(string ip, int port)
+	// 	{
+	// 		this.ip = ip;
+	// 		this.port = port;
+	// 	}
+	// }
+
+	/// <summary>
+    /// C# equivalent of the Python SocketInfo TypedDict.
+    /// Represents individual socket details for topics or services.
+    /// </summary>
+    [MessagePackObject]
+    public class SocketInfo
+    {
+        [Key(0)]
+        public string Name { get; set; }
+
+        [Key(1)]
+        public string Ip { get; set; }
+
+        [Key(2)]
+        public int Port { get; set; }
+    }
+
+    /// <summary>
+    /// C# equivalent of the Python NodeInfo TypedDict.
+    /// Contains global node identification and lists of available sockets.
+    /// </summary>
+    [MessagePackObject]
+    public class NodeInfo
+    {
+        [Key(0)]
+        public string NodeID { get; set; }
+
+        [Key(1)]
+        public int InfoID { get; set; }
+
+        [Key(2)]
+        public string Name { get; set; }
+
+        [Key(3)]
+        public string Ip { get; set; }
+
+        [Key(4)]
+        public List<SocketInfo> Topics { get; set; }
+
+        [Key(5)]
+        public List<SocketInfo> Services { get; set; }
+    }
+
+
+	public class LocalInfo
 	{
-		public string ip;
-		public int port;
-		public NodeAddress(string ip, int port)
+		public NodeInfo nodeInfo;
+		// public string nodeID;
+		// public string nodeInfoID;
+		// public string type;
+		// public int port;
+		// public List<string> serviceList = new();
+		// public Dictionary<string, int> topicDict = new();
+
+		public LocalInfo(string nodeName)
 		{
-			this.ip = ip;
-			this.port = port;
+			nodeInfo = new NodeInfo();
+			nodeInfo.Topics = new List<SocketInfo>();
+			nodeInfo.Services = new List<SocketInfo>();
+			nodeInfo.NodeID = Guid.NewGuid().ToString();
+			nodeInfo.InfoID = 0;
+			nodeInfo.Name = nodeName;
+			nodeInfo.Ip = NetworkUtils.GetLocalIPsInSameSubnet("127.0.0.1");
 		}
-	}
 
-	public class NodeInfo
-	{
-		public string name;
-		public string nodeID;
-		public string nodeInfoID;
-		public string type;
-		public int port;
-		public List<string> serviceList = new();
-		public Dictionary<string, int> topicDict = new();
-
-		public NodeInfo(string nodeName, string nodeType, int servicePort)
+		public void AddService(string serviceName, int port)
 		{
-			name = nodeName;
-			nodeID = Guid.NewGuid().ToString();
-			nodeInfoID = Guid.NewGuid().ToString();
-			type = nodeType;
-			port = servicePort;
-		}
-
-		public void AddService(string serviceName)
-		{
-			if (!serviceList.Contains(serviceName))
+			foreach (var service in nodeInfo.Services)
 			{
-				serviceList.Add(serviceName);
+				if (service.Name == serviceName)
+				{
+					throw new Exception($"Service {serviceName} already exists.");
+				}
 			}
+			nodeInfo.Services.Add(new SocketInfo { Name = serviceName, Ip = nodeInfo.Ip, Port = port });
 			GenerateNewNodeInfoID();
 		}
 
 		public void RemoveService(string serviceName)
 		{
-			if (serviceList.Contains(serviceName))
+			if (nodeInfo.Services.Any(s => s.Name == serviceName))
 			{
-				serviceList.Remove(serviceName);
+				nodeInfo.Services.RemoveAll(s => s.Name == serviceName);
 			}
 			GenerateNewNodeInfoID();
+			Debug.LogWarning($"Service {serviceName} removed from LocalInfo.");
 		}
 
 
 		public void AddTopic(string topicName, int port)
 		{
-			if (!topicDict.ContainsKey(topicName))
+			foreach (var topic in nodeInfo.Topics)
 			{
-				topicDict[topicName] = port;
+				if (topic.Name == topicName)
+				{
+					throw new Exception($"Topic {topicName} already exists.");
+				}
 			}
+			nodeInfo.Topics.Add(new SocketInfo { Name = topicName, Ip = nodeInfo.Ip, Port = port });
 			GenerateNewNodeInfoID();
 		}
 
 		public void RemoveTopic(string topicName)
 		{
-			if (topicDict.ContainsKey(topicName))
+			if (nodeInfo.Topics.Any(t => t.Name == topicName))
 			{
-				topicDict.Remove(topicName);
+				nodeInfo.Topics.RemoveAll(t => t.Name == topicName);
 			}
 			GenerateNewNodeInfoID();
 		}
 
 		private void GenerateNewNodeInfoID()
 		{
-			nodeInfoID = Guid.NewGuid().ToString();
+			nodeInfo.InfoID += 1;
 		}
 
 		public void Rename(string newName)
 		{
-			name = newName;
+			nodeInfo.Name = newName;
 			GenerateNewNodeInfoID();
 		}
 
-
 	}
+
+	public static class NodeInfoSerializer
+    {
+        // Big-Endian Helper: C# is Little-Endian by default
+        private static byte[] ToBigEndian(byte[] data)
+        {
+            if (BitConverter.IsLittleEndian) Array.Reverse(data);
+            return data;
+        }
+
+        public static byte[] EncodeNodeInfo(NodeInfo info)
+        {
+            using (MemoryStream ms = new MemoryStream())
+            {
+                // Note: We don't use BinaryWriter directly for ints to ensure Big-Endian
+                
+                // 1. NodeID (Fixed 36 bytes)
+                byte[] nodeIdBytes = Encoding.UTF8.GetBytes(info.NodeID);
+                ms.Write(nodeIdBytes, 0, 36);
+
+                // 2. InfoID (u32, Big-Endian)
+                ms.Write(ToBigEndian(BitConverter.GetBytes((uint)info.InfoID)), 0, 4);
+
+                // 3. Name (String: u16 len + data)
+                WriteString(ms, info.Name);
+
+                // 4. IP (String: u16 len + data)
+                WriteString(ms, info.Ip);
+
+                // 5. Topics
+                ms.Write(ToBigEndian(BitConverter.GetBytes((ushort)info.Topics.Count)), 0, 2);
+                foreach (var topic in info.Topics)
+                {
+                    WriteString(ms, topic.Name);
+                    ms.Write(ToBigEndian(BitConverter.GetBytes((ushort)topic.Port)), 0, 2);
+                }
+
+                // 6. Services
+                ms.Write(ToBigEndian(BitConverter.GetBytes((ushort)info.Services.Count)), 0, 2);
+                foreach (var service in info.Services)
+                {
+                    WriteString(ms, service.Name);
+                    ms.Write(ToBigEndian(BitConverter.GetBytes((ushort)service.Port)), 0, 2);
+                }
+
+                return ms.ToArray();
+            }
+        }
+
+        public static NodeInfo DecodeNodeInfo(byte[] data)
+        {
+            NodeInfo info = new NodeInfo();
+            int pos = 0;
+
+            // 1. NodeID (36 chars)
+            info.NodeID = Encoding.UTF8.GetString(data, pos, 36);
+            pos += 36;
+
+            // 2. InfoID (u32)
+            info.InfoID = (int)ReadU32(data, ref pos);
+
+            // 3. Name
+            info.Name = ReadString(data, ref pos);
+
+            // 4. IP
+            info.Ip = ReadString(data, ref pos);
+
+            // 5. Topics
+            ushort topicCount = ReadU16(data, ref pos);
+            for (int i = 0; i < topicCount; i++)
+            {
+                string sName = ReadString(data, ref pos);
+                ushort sPort = ReadU16(data, ref pos);
+                info.Topics.Add(new SocketInfo { Name = sName, Ip = info.Ip, Port = sPort });
+            }
+
+            // 6. Services
+            ushort serviceCount = ReadU16(data, ref pos);
+            for (int i = 0; i < serviceCount; i++)
+            {
+                string sName = ReadString(data, ref pos);
+                ushort sPort = ReadU16(data, ref pos);
+                info.Services.Add(new SocketInfo { Name = sName, Ip = info.Ip, Port = sPort });
+            }
+
+            return info;
+        }
+
+        // --- Private Helpers to match Python BinWriter/BinReader ---
+
+        private static void WriteString(Stream stream, string s)
+        {
+            byte[] bytes = Encoding.UTF8.GetBytes(s);
+            stream.Write(ToBigEndian(BitConverter.GetBytes((ushort)bytes.Length)), 0, 2);
+            stream.Write(bytes, 0, bytes.Length);
+        }
+
+        private static string ReadString(byte[] data, ref int pos)
+        {
+            ushort len = ReadU16(data, ref pos);
+            string s = Encoding.UTF8.GetString(data, pos, len);
+            pos += len;
+            return s;
+        }
+
+        private static ushort ReadU16(byte[] data, ref int pos)
+        {
+            byte[] buffer = { data[pos], data[pos + 1] };
+            if (BitConverter.IsLittleEndian) Array.Reverse(buffer);
+            pos += 2;
+            return BitConverter.ToUInt16(buffer, 0);
+        }
+
+        private static uint ReadU32(byte[] data, ref int pos)
+        {
+            byte[] buffer = { data[pos], data[pos + 1], data[pos + 2], data[pos + 3] };
+            if (BitConverter.IsLittleEndian) Array.Reverse(buffer);
+            pos += 4;
+            return BitConverter.ToUInt32(buffer, 0);
+        }
+    }
+
 
 	public static class NetworkUtils
 	{

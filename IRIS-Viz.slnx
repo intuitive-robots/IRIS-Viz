@@ -1,0 +1,4 @@
+﻿<Solution>
+  <Project Path="IntuitivoRobotsLab.IRIS-Viz.SceneLoader.csproj" />
+  <Project Path="IntuitivoRobotsLab.IRIS-Viz.IRISNode.csproj" />
+</Solution>
