@@ -3,6 +3,19 @@
 All notable changes to this project are documented in this file.
 This file is generated from git history.
 
+## v2.0.1 - 2026-01-27
+
+### Changed
+- Switch to lightweight heartbeat message format compatible with pyzlc protocol
+  - Heartbeat now sends 56+ bytes instead of full NodeInfo
+  - Format: version (3×int32), node_id (36 bytes), info_id (int32), service_port (int32), group_name (variable)
+- Change default multicast address from `239.255.10.10` to `224.0.0.1`
+- Add `groupName` field with default value `zlc_default_group_name`
+- Rename default service from `GetNodeInfo` to `get_node_info` (pyzlc compatible, no namespace prefix)
+
+### Added
+- `HeartbeatMessage` class in NetworkUtils.cs with Big-Endian serialization
+
 ## v2.0.0-beta.1 - 2025-09-24
 - Unity version to 6000.0.65f1
 - remove some packages
