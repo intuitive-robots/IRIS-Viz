@@ -314,8 +314,12 @@ PrefabInstance:
     m_TransformParent: {fileID: 0}
     m_Modifications:
     - target: {fileID: 2407004314157632247, guid: de2495710546adb4bb1d60e91b7db0d1, type: 3}
+      propertyPath: groupName
+      value: IRIS
+      objectReference: {fileID: 0}
+    - target: {fileID: 2407004314157632247, guid: de2495710546adb4bb1d60e91b7db0d1, type: 3}
       propertyPath: multicastAddress
-      value: 224.0.0.1
+      value: 239.255.10.10
       objectReference: {fileID: 0}
     - target: {fileID: 3203194774513815821, guid: de2495710546adb4bb1d60e91b7db0d1, type: 3}
       propertyPath: materialResolver
