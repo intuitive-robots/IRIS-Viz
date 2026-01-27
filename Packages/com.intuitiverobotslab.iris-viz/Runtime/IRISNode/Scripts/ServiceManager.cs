@@ -11,8 +11,6 @@ using IRIS.Utilities;
 
 namespace IRIS.Node
 {
-
-	using RawFrameHandler = Func<byte[], byte[]>;
 	public interface IService
 	{
 		byte[] BytesCallback(byte[] bytes);

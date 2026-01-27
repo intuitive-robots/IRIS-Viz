@@ -1,13 +1,13 @@
-using UnityEngine;
 using System;
+using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Collections.Generic;
+using IRIS.Utilities;
 using NetMQ;
 using NetMQ.Sockets;
-using IRIS.Utilities;
+using UnityEngine;
 
 namespace IRIS.Node
 {
@@ -16,12 +16,13 @@ namespace IRIS.Node
     {
 
         public LocalInfo localInfo { get; set; }
-        public string NodeName {get; private set; }
+        public string NodeName { get; private set; }
 
         [Header("Multicast Settings")]
         public string multicastAddress = "239.255.10.10";
         public int port = 7720;
         public float messageSendInterval = 1.0f; // Send a message every second
+        public string groupName = "IRIS";
         private CancellationTokenSource cancellationTokenSource;
         private List<Task> multicastTasksList = new();
         public Action SubscriptionSpin;
@@ -59,8 +60,9 @@ namespace IRIS.Node
             ServiceManager = new ServiceManager(cancellationTokenSource.Token);
             SubscriberManager = new SubscriberManager();
             localInfo = new LocalInfo($"IRIS/Device/{NodeName}");
+            localInfo.servicePort = ServiceManager.port.ToString();
             InitializeDefaultServices();
-            
+
             foreach (IPAddress ipAddress in NetworkUtils.GetNetworkInterfaces(true, true))
             {
                 // Start the multicast sending task for each interface
@@ -76,7 +78,8 @@ namespace IRIS.Node
 
         private void InitializeDefaultServices()
         {
-            ServiceManager.RegisterServiceCallback<string, NodeInfo>("GetNodeInfo", (req) => localInfo.nodeInfo);
+            // Register get_node_info without namespace for pyzlc compatibility
+            ServiceManager.RegisterServiceCallback<string, NodeInfo>("get_node_info", (req) => localInfo.nodeInfo, useNameSpace: false);
             ServiceManager.RegisterServiceCallback<string, string>("Rename", (req) => Rename(req));
         }
 
@@ -95,7 +98,13 @@ namespace IRIS.Node
                 Debug.Log($"UDP client initialized successfully for interface {ipAddress}");
                 while (!cancellationToken.IsCancellationRequested)
                 {
-                    byte[] msgBytes = NodeInfoSerializer.EncodeNodeInfo(localInfo.nodeInfo);
+                    HeartbeatMessage heartbeat = new HeartbeatMessage(
+                        localInfo.nodeInfo.NodeID,
+                        localInfo.nodeInfo.InfoID,
+                        ServiceManager.port,
+                        groupName
+                    );
+                    byte[] msgBytes = heartbeat.ToBytes();
                     client.Send(msgBytes, msgBytes.Length, remoteEndPoint);
                     // Wait for the specified interval or until cancellation is requested
                     await Task.Delay(TimeSpan.FromSeconds(messageSendInterval), cancellationToken);
@@ -170,7 +179,7 @@ namespace IRIS.Node
                 localInfo.Rename(newName);
                 PlayerPrefs.SetString("HostName", localInfo.nodeInfo.Name);
                 Debug.Log($"Change Host Name to {localInfo.nodeInfo.Name}");
-                PlayerPrefs.Save();                
+                PlayerPrefs.Save();
             });
             return ResponseStatus.SUCCESS;
         }
