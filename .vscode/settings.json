@@ -64,5 +64,20 @@
         "editor.defaultFormatter": "ms-dotnettools.csharp"
     },
     "dotnet.completion.showCompletionItemsFromUnimportedNamespaces": true,
-    "dotnet.formatting.organizeImportsOnFormat": true
+    "dotnet.formatting.organizeImportsOnFormat": true,
+    "workbench.colorCustomizations": {
+        "editor.lineHighlightBackground": "#1073cf2d",
+        "editor.lineHighlightBorder": "#9fced11f",
+        "activityBar.background": "#0E3143",
+        "titleBar.activeBackground": "#13455E",
+        "titleBar.activeForeground": "#F7FBFD",
+        "titleBar.inactiveBackground": "#0E3143",
+        "titleBar.inactiveForeground": "#F7FBFD",
+        "statusBar.background": "#0E3143",
+        "statusBar.foreground": "#F7FBFD",
+        "statusBar.debuggingBackground": "#0E3143",
+        "statusBar.debuggingForeground": "#F7FBFD",
+        "statusBar.noFolderBackground": "#0E3143",
+        "statusBar.noFolderForeground": "#F7FBFD"
+    }
 }

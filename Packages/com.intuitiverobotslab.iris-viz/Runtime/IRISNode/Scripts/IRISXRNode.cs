@@ -16,8 +16,9 @@ namespace IRIS.Node
     {
 
         public LocalInfo localInfo { get; set; }
-        public string NodeName { get; private set; }
-
+        [Header("Node Settings")]
+        private string NodeName;
+        public string DeviceType = "UnityEditor";
         [Header("Multicast Settings")]
         public string multicastAddress = "239.255.10.10";
         public int port = 7720;
@@ -42,11 +43,11 @@ namespace IRIS.Node
             NetMQConfig.Linger = TimeSpan.Zero;
             // Initialize local node info
             // Default host name
-            string NodeName = $"Unity-{Environment.MachineName}";
+            string NodeName = CreateNodeName($"Unity-{Environment.MachineName}");
             if (PlayerPrefs.HasKey("HostName"))
             {
                 // The key exists, proceed to get the value
-                NodeName = PlayerPrefs.GetString("HostName");
+                NodeName = CreateNodeName(PlayerPrefs.GetString("HostName"));
                 Debug.Log($"Find Host Name: {NodeName}");
             }
             else
@@ -54,12 +55,11 @@ namespace IRIS.Node
                 Debug.Log($"Host Name not found, using default name {NodeName}");
             }
             // TODO: check the management of sockets
-            // _sockets = new List<NetMQSocket>() { ServiceManager.ResponseSocket };
             // Initialize cancellation token
             cancellationTokenSource = new CancellationTokenSource();
             ServiceManager = new ServiceManager(cancellationTokenSource.Token);
             SubscriberManager = new SubscriberManager();
-            localInfo = new LocalInfo($"IRIS/Device/{NodeName}");
+            localInfo = new LocalInfo(NodeName);
             localInfo.servicePort = ServiceManager.port.ToString();
             InitializeDefaultServices();
 
@@ -172,13 +172,19 @@ namespace IRIS.Node
         }
 
 
-        public string Rename(string newName)
+        private string CreateNodeName(string baseName)
+        {
+            return $"IRIS/Device/{DeviceType}/{baseName}";
+        }
+
+        public string Rename(string newbaseName)
         {
             UnityMainThreadDispatcher.Instance.Enqueue(() =>
             {
-                localInfo.Rename(newName);
-                PlayerPrefs.SetString("HostName", localInfo.nodeInfo.Name);
-                Debug.Log($"Change Host Name to {localInfo.nodeInfo.Name}");
+                NodeName = CreateNodeName(newbaseName);
+                localInfo.Rename(NodeName);
+                PlayerPrefs.SetString("HostName", newbaseName);
+                Debug.Log($"Change Host Name to {newbaseName}");
                 PlayerPrefs.Save();
             });
             return ResponseStatus.SUCCESS;
