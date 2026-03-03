@@ -3,6 +3,11 @@
 All notable changes to this project are documented in this file.
 This file is generated from git history.
 
+## v2.0.2 - 2026-03-03
+
+### Changed
+- Enhance node settings and naming conventions in IRISXRNode
+
 ## v2.0.1 - 2026-01-27
 
 ### Changed
