@@ -3,6 +3,11 @@
 All notable changes to this project are documented in this file.
 This file is generated from git history.
 
+## v2.0.5 - 2026-03-04
+
+### Changed
+- Refactored IRISNode: Removed IRISAnchor and added IRISOrigin for scene offset management
+
 ## v2.0.4 - 2026-03-04
 
 ### Added
