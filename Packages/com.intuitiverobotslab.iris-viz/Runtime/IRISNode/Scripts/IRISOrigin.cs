@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 using IRIS.Node;
@@ -29,7 +30,7 @@ namespace IRIS.Node
         [SerializeField]
         private Transform _sceneTransform;
         private SceneOffset _offsetData;
-        public Action<SceneData> OnOffsetApplied;
+        public Action<SceneOffset> OnOffsetApplied;
 
         public void Start()
         {
