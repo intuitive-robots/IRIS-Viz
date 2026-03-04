@@ -91,7 +91,7 @@ namespace IRIS.SceneLoader
         {
             if (!_trajectoryDict.ContainsKey(name))
             {
-                Debug.Log($"Trajectory with name {name} does not exist, ignoring.");
+                Debug.LogWarning($"Trajectory with name {name} does not exist, ignoring.");
                 return "Trajectory Not Found";
             }
 
@@ -167,6 +167,7 @@ namespace IRIS.SceneLoader
             }
             else
             {
+                Debug.LogWarning($"Trajectory {lineRenderer.gameObject.name} has no color information, defaulting to white.");
                 // Default white color
                 lineRenderer.startColor = Color.white;
                 lineRenderer.endColor = Color.white;

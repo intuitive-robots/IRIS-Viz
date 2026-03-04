@@ -123,7 +123,7 @@ namespace IRIS.Node
             // Wait for service task completion
             try
             {
-                serviceTask?.Wait();
+                serviceTask?.Wait(1000); // Wait for up to 5 seconds
                 Debug.Log("Service task completed successfully.");
             }
             catch (Exception e)
@@ -190,7 +190,8 @@ namespace IRIS.Node
 				}
 				finally
 				{
-					try					{
+					try
+					{
 						_responseSocket.SendMultipartBytes(response);
 					}
 					catch (Exception ex)

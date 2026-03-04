@@ -13,6 +13,7 @@ GameObject:
   - component: {fileID: 3203194774513815821}
   - component: {fileID: 259209534123663940}
   - component: {fileID: 2875731928885332986}
+  - component: {fileID: 2019278771713100634}
   m_Layer: 0
   m_Name: IRISNode
   m_TagString: Untagged
@@ -47,9 +48,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4e4c8106baaae0d489138369a4fb1533, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  DeviceType: UnityEditor
   multicastAddress: 239.255.10.10
   port: 7720
   messageSendInterval: 1
+  groupName: IRIS
 --- !u!114 &3203194774513815821
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -63,6 +66,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   simScenePrefab: {fileID: 3537466871457611858, guid: 126bffd15ec827eb9a4e421fcb306cc1, type: 3}
+  materialResolver: {fileID: 0}
 --- !u!114 &259209534123663940
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -87,3 +91,18 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: db9e6eb7bb0e36f5a8cefd1aa9e2655d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  testLogInterval: 1
+  fpsUpdateInterval: 5
+--- !u!114 &2019278771713100634
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5416606952447211905}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 44d75ff78a74acbf0a1eadd98638288f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  lineMaterial: {fileID: 2100000, guid: d56619e2dcaab57d8a8d37543db94f08, type: 2}
