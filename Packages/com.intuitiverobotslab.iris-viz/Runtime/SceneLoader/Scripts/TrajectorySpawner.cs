@@ -7,16 +7,23 @@ using UnityEngine;
 namespace IRIS.SceneLoader
 {
     [MessagePackObject]
+    public class TrajectoryWaypoint
+    {
+        [Key("pos")]
+        public float[] pos; // Position [x, y, z]
+
+        [Key("color")]
+        public float[] color; // RGBA [r, g, b, a]
+    }
+
+    [MessagePackObject]
     public class TrajectoryConfig
     {
         [Key("name")]
         public string name;
 
-        [Key("points")]
-        public float[][] points; // B-spline control points [[x,y,z], ...]
-
-        [Key("color")]
-        public float[] color; // RGBA [r,g,b,a]
+        [Key("waypoints")]
+        public TrajectoryWaypoint[] waypoints; // Array of waypoints with position and color
 
         [Key("width")]
         public float width;
@@ -131,8 +138,9 @@ namespace IRIS.SceneLoader
 
         private void UpdateLineRenderer(LineRenderer lineRenderer, TrajectoryConfig config)
         {
-            // Convert control points to Vector3 array
-            Vector3[] controlPoints = ConvertToVector3Array(config.points);
+            // Extract positions and colors from waypoints
+            Vector3[] controlPoints = ExtractPositions(config.waypoints);
+            Color[] controlColors = ExtractColors(config.waypoints);
 
             // Interpolate B-spline curve
             int resolution = config.resolution > 0 ? config.resolution : 10;
@@ -147,36 +155,126 @@ namespace IRIS.SceneLoader
             lineRenderer.startWidth = width;
             lineRenderer.endWidth = width;
 
-            // Set color
-            if (config.color != null && config.color.Length >= 3)
+            // Set per-point colors
+            if (controlColors.Length > 0)
             {
-                Color color = new Color(
-                    config.color[0],
-                    config.color[1],
-                    config.color[2],
-                    config.color.Length >= 4 ? config.color[3] : 1f
-                );
-                lineRenderer.startColor = color;
-                lineRenderer.endColor = color;
+                // Interpolate colors along the B-spline
+                Color[] curveColors = InterpolateColors(controlColors, resolution, controlPoints.Length);
+
+                // Create gradient from interpolated colors
+                Gradient gradient = CreateGradientFromColors(curveColors);
+                lineRenderer.colorGradient = gradient;
+            }
+            else
+            {
+                // Default white color
+                lineRenderer.startColor = Color.white;
+                lineRenderer.endColor = Color.white;
             }
         }
 
-        private Vector3[] ConvertToVector3Array(float[][] points)
+        private Vector3[] ExtractPositions(TrajectoryWaypoint[] waypoints)
         {
-            if (points == null || points.Length == 0)
+            if (waypoints == null || waypoints.Length == 0)
             {
                 return new Vector3[0];
             }
 
-            Vector3[] result = new Vector3[points.Length];
-            for (int i = 0; i < points.Length; i++)
+            Vector3[] result = new Vector3[waypoints.Length];
+            for (int i = 0; i < waypoints.Length; i++)
             {
-                if (points[i] != null && points[i].Length >= 3)
+                if (waypoints[i]?.pos != null && waypoints[i].pos.Length >= 3)
                 {
-                    result[i] = new Vector3(points[i][0], points[i][1], points[i][2]);
+                    result[i] = new Vector3(waypoints[i].pos[0], waypoints[i].pos[1], waypoints[i].pos[2]);
                 }
             }
             return result;
+        }
+
+        private Color[] ExtractColors(TrajectoryWaypoint[] waypoints)
+        {
+            if (waypoints == null || waypoints.Length == 0)
+            {
+                return new Color[] { Color.white };
+            }
+
+            Color[] result = new Color[waypoints.Length];
+            for (int i = 0; i < waypoints.Length; i++)
+            {
+                if (waypoints[i]?.color != null && waypoints[i].color.Length >= 3)
+                {
+                    result[i] = new Color(
+                        waypoints[i].color[0],
+                        waypoints[i].color[1],
+                        waypoints[i].color[2],
+                        waypoints[i].color.Length >= 4 ? waypoints[i].color[3] : 1f
+                    );
+                }
+                else
+                {
+                    result[i] = Color.white;
+                }
+            }
+            return result;
+        }
+
+        private Color[] InterpolateColors(Color[] controlColors, int resolution, int numControlPoints)
+        {
+            if (controlColors == null || controlColors.Length == 0)
+            {
+                return new Color[] { Color.white };
+            }
+
+            if (controlColors.Length == 1)
+            {
+                return controlColors;
+            }
+
+            // Calculate total number of curve points (same logic as InterpolateBSpline)
+            int totalPoints;
+            if (numControlPoints < 4)
+            {
+                totalPoints = (numControlPoints - 1) * resolution + 1;
+            }
+            else
+            {
+                int numSpans = numControlPoints - 3;
+                totalPoints = numSpans * resolution + 1;
+            }
+
+            Color[] result = new Color[totalPoints];
+            for (int i = 0; i < totalPoints; i++)
+            {
+                float t = i / (float)(totalPoints - 1);
+                float colorIndex = t * (controlColors.Length - 1);
+                int idx0 = Mathf.FloorToInt(colorIndex);
+                int idx1 = Mathf.Min(idx0 + 1, controlColors.Length - 1);
+                float blend = colorIndex - idx0;
+                result[i] = Color.Lerp(controlColors[idx0], controlColors[idx1], blend);
+            }
+
+            return result;
+        }
+
+        private Gradient CreateGradientFromColors(Color[] colors)
+        {
+            Gradient gradient = new Gradient();
+
+            // Unity Gradient supports max 8 color keys
+            int maxKeys = Mathf.Min(colors.Length, 8);
+            GradientColorKey[] colorKeys = new GradientColorKey[maxKeys];
+            GradientAlphaKey[] alphaKeys = new GradientAlphaKey[maxKeys];
+
+            for (int i = 0; i < maxKeys; i++)
+            {
+                float t = i / (float)(maxKeys - 1);
+                int colorIdx = Mathf.RoundToInt(t * (colors.Length - 1));
+                colorKeys[i] = new GradientColorKey(colors[colorIdx], t);
+                alphaKeys[i] = new GradientAlphaKey(colors[colorIdx].a, t);
+            }
+
+            gradient.SetKeys(colorKeys, alphaKeys);
+            return gradient;
         }
 
         /// <summary>

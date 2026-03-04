@@ -190,8 +190,13 @@ namespace IRIS.Node
 				}
 				finally
 				{
-					// Ensure the response is sent even in case of exceptions
-					_responseSocket.SendMultipartBytes(response);
+					try					{
+						_responseSocket.SendMultipartBytes(response);
+					}
+					catch (Exception ex)
+					{
+						Debug.LogError($"Error sending service response: {ex.Message}\n{ex.StackTrace}");
+					}
 				}
 			}
 		}
