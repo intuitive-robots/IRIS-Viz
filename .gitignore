@@ -80,3 +80,4 @@ crashlytics-build.properties
 /Assets/Packages.meta
 
 IRIS-Viz_BurstDebugInformation_DoNotShip
+mono_crash.mem.*

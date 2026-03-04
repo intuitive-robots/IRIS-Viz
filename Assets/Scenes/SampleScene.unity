@@ -314,6 +314,10 @@ PrefabInstance:
     m_TransformParent: {fileID: 0}
     m_Modifications:
     - target: {fileID: 2407004314157632247, guid: de2495710546adb4bb1d60e91b7db0d1, type: 3}
+      propertyPath: NodeName
+      value: Test
+      objectReference: {fileID: 0}
+    - target: {fileID: 2407004314157632247, guid: de2495710546adb4bb1d60e91b7db0d1, type: 3}
       propertyPath: groupName
       value: IRIS
       objectReference: {fileID: 0}
