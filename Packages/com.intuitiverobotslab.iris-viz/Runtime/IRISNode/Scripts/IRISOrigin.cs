@@ -3,7 +3,7 @@ using UnityEngine;
 using IRIS.Node;
 using MessagePack;
 
-namespace IRIS.SceneLoader
+namespace IRIS.Node
 {
 
     [MessagePackObject(keyAsPropertyName: true)]
@@ -28,7 +28,8 @@ namespace IRIS.SceneLoader
         private GameObject _originVisualObject;
         [SerializeField]
         private Transform _sceneTransform;
-        protected SceneOffset _offsetData;
+        private SceneOffset _offsetData;
+        public Action<SceneData> OnOffsetApplied;
 
         public void Start()
         {
@@ -59,6 +60,7 @@ namespace IRIS.SceneLoader
             _sceneTransform.localPosition = _offsetData.GetPos();
             _sceneTransform.localRotation = _offsetData.GetRot();
             Debug.Log($"Applying offset for {name}");
+            OnOffsetApplied?.Invoke(_offsetData);
         }
 
         private string ToggleOriginCallback(string msg)
