@@ -3,6 +3,22 @@
 All notable changes to this project are documented in this file.
 This file is generated from git history.
 
+## v2.0.3 - 2026-03-04
+
+### Added
+- `TrajectorySpawner` for B-spline trajectory visualization with services:
+  - `SpawnTrajectory` - creates trajectory from waypoints
+  - `UpdateTrajectory` - updates existing trajectory
+  - `DeleteTrajectory` - removes trajectory by name
+- `TrajectoryWaypoint` class with per-point position and color
+- `TrajectoryConfig` MessagePack data class for trajectory configuration
+- B-spline interpolation for smooth curve rendering
+- Per-point color gradient interpolation for trajectories
+
+### Changed
+- Enhanced ServiceManager error handling
+- Updated IRISNode prefab for improved functionality
+
 ## v2.0.2 - 2026-03-03
 
 ### Changed
