@@ -3,6 +3,20 @@
 All notable changes to this project are documented in this file.
 This file is generated from git history.
 
+## v2.0.8 - 2026-03-12
+
+### Changed
+- Updated `Publisher` to support optional topic namespacing via `useNameSpace` parameter
+- Publisher topics now default to `<node_name>/<topic>` for clearer multi-node topic isolation
+- Bumped package version to `2.0.8`
+
+## v2.0.7 - 2026-03-04
+
+### Changed
+- Refactored `IRISOrigin` to use namespace `IRIS.Node`
+- Added `OnOffsetApplied` callback in `IRISOrigin`
+- Fixed `OnOffsetApplied` callback type from `SceneData` to `SceneOffset`
+
 ## v2.0.5 - 2026-03-04
 
 ### Changed
