@@ -13,12 +13,16 @@ namespace IRIS.Node
 		protected string _topic;
 		public int Port { get; private set; }
 
-		public Publisher(string topic, int port = 0)
+		public Publisher(string topic, int port = 0, bool useNameSpace = true)
 		{
-			_topic = topic;
 			_pubSocket = new PublisherSocket();
 			_pubSocket.Bind($"tcp://0.0.0.0:{port}");
 			Port = NetworkUtils.GetNetZMQSocketPort(_pubSocket);
+			_topic = topic;
+			if (useNameSpace)
+			{
+				_topic = $"{IRISXRNode.Instance.localInfo.nodeInfo.Name}/{_topic}";
+			}
 			IRISXRNode.Instance.localInfo.AddTopic(_topic, Port);
 			IRISXRNode.Instance.sockets[_topic] = _pubSocket;
 			Debug.Log($"Publisher for topic {_topic} is created");
