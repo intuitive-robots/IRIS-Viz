@@ -109,7 +109,10 @@ namespace IRIS.SceneLoader
         private GameObject CreateTrajectoryObject(TrajectoryConfig config)
         {
             GameObject obj = new GameObject($"Trajectory_{config.name}");
-            obj.transform.SetParent(transform);
+            obj.transform.SetParent(transform, false); // keep local identity relative to parent
+            obj.transform.localPosition = Vector3.zero;
+            obj.transform.localRotation = Quaternion.identity;
+            obj.transform.localScale = Vector3.one;
 
             LineRenderer lineRenderer = obj.AddComponent<LineRenderer>();
             ConfigureLineRenderer(lineRenderer);
