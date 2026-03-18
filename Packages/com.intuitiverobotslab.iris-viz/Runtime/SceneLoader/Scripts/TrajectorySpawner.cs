@@ -120,7 +120,7 @@ namespace IRIS.SceneLoader
 
         private void ConfigureLineRenderer(LineRenderer lineRenderer)
         {
-            lineRenderer.useWorldSpace = true;
+            lineRenderer.useWorldSpace = false;
             lineRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
             lineRenderer.receiveShadows = false;
             lineRenderer.allowOcclusionWhenDynamic = false;
