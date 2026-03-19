@@ -1,6 +1,6 @@
 {
     "name": "com.intuitiverobotslab.iris-viz",
-    "version": "2.0.9",
+    "version": "2.0.10",
     "displayName": "IRIS-Viz",
     "description": "A Unity package for visualizing objects in simulation and real world",
     "unity": "6000.0",
