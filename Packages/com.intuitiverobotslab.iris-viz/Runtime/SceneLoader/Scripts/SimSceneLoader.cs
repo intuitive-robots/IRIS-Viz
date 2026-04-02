@@ -148,12 +148,12 @@ namespace IRIS.SceneLoader
         {
             Debug.Log($"Building mesh for {visualObj.name}");
             MeshFilter meshFilter = visualObj.GetComponent<MeshFilter>();
-            meshFilter.mesh = new Mesh
-            {
-                vertices = DecodeArray<Vector3>(simMesh.vertices, 0, simMesh.vertices.Length),
-                normals = DecodeArray<Vector3>(simMesh.normals, 0, simMesh.normals.Length),
-                triangles = DecodeArray<int>(simMesh.indices, 0, simMesh.indices.Length),
-            };
+            meshFilter.mesh = new Mesh();
+            meshFilter.mesh.indexFormat = UnityEngine.Rendering.IndexFormat.UInt32;
+            meshFilter.mesh.name = $"{visualObj.name}_Mesh";
+            meshFilter.mesh.vertices = DecodeArray<Vector3>(simMesh.vertices, 0, simMesh.vertices.Length);
+            meshFilter.mesh.normals = DecodeArray<Vector3>(simMesh.normals, 0, simMesh.normals.Length);
+            meshFilter.mesh.triangles = DecodeArray<int>(simMesh.indices, 0, simMesh.indices.Length);
             if (simMesh.uv != null)
             {
                 meshFilter.mesh.uv = DecodeArray<Vector2>(simMesh.uv, 0, simMesh.uv.Length);
