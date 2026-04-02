@@ -44,7 +44,8 @@ namespace IRIS.Node
 			}
 			catch (Exception ex)
 			{
-				Debug.LogWarning($"Error processing message for topic {_topic}: {ex.Message}");
+				Debug.LogWarning($"Error processing message for topic {_topic}: {ex.Message}\n{ex.StackTrace}");
+				
 			}
 		}
 
