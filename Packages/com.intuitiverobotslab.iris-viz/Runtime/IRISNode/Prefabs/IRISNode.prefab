@@ -91,6 +91,7 @@ GameObject:
   - component: {fileID: 1102220119116905872}
   - component: {fileID: 5667377087676853582}
   - component: {fileID: 6397201046998674857}
+  - component: {fileID: 3604984722517279093}
   m_Layer: 0
   m_Name: IRISScene
   m_TagString: Untagged
@@ -154,6 +155,19 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   lineMaterial: {fileID: 2100000, guid: d56619e2dcaab57d8a8d37543db94f08, type: 2}
+--- !u!114 &3604984722517279093
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7825878615603020525}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f486d605b7999f35681b25c658e1e3b9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  videoReceiverPrefab: {fileID: 0}
 --- !u!1001 &1366725212491163980
 PrefabInstance:
   m_ObjectHideFlags: 0

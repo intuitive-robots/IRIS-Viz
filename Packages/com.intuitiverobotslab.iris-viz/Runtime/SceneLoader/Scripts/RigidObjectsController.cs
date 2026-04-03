@@ -6,12 +6,12 @@ using MessagePack;
 namespace IRIS.SceneLoader
 {
 
-[MessagePackObject]
-public class StreamMessage
-{
-    [Key("data")]
-    public Dictionary<string, List<float>> data;
-}
+    [MessagePackObject]
+    public class StreamMessage
+    {
+        [Key("data")]
+        public Dictionary<string, List<float>> data;
+    }
 
     [RequireComponent(typeof(SimSceneLoader))]
     public class RigidObjectsController : MonoBehaviour

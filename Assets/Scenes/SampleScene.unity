@@ -329,6 +329,10 @@ PrefabInstance:
       propertyPath: materialResolver
       value: 
       objectReference: {fileID: 11400000, guid: d227515756115c644af86f0816fc658d, type: 2}
+    - target: {fileID: 3604984722517279093, guid: de2495710546adb4bb1d60e91b7db0d1, type: 3}
+      propertyPath: videoReceiverPrefab
+      value: 
+      objectReference: {fileID: 1578840320720410509, guid: 11ecb2ae5f7d60ecd90cfa9b90e85f57, type: 3}
     - target: {fileID: 5416606952447211905, guid: de2495710546adb4bb1d60e91b7db0d1, type: 3}
       propertyPath: m_Name
       value: IRISNode
